@@ -19,8 +19,11 @@
   <button id="btn-manage" onclick="show('manage')" style="flex:1;padding:14px 4px;background:#38003c;color:#7a4a8a;border:none;font-family:monospace;font-size:11px;font-weight:900;letter-spacing:2px;cursor:pointer;">👥 SQUAD</button>
 </div>
 
+<!-- Loading indicator -->
+<div id="loading" style="padding:40px;text-align:center;font-family:monospace;font-size:13px;color:#5a3a6a;letter-spacing:2px;">LOADING...</div>
+
 <!-- TABLE -->
-<div id="view-table" style="padding:16px;">
+<div id="view-table" style="padding:16px;display:none;">
   <div style="display:grid;grid-template-columns:36px 1fr 38px 44px 48px;gap:4px;padding:6px 10px;margin-bottom:4px;">
     <div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;font-weight:700;"></div>
     <div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;font-weight:700;">PLAYER</div>
@@ -62,129 +65,69 @@
   <button onclick="resetAll()" style="padding:10px 18px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:12px;cursor:pointer;">Reset All Scores</button>
 </div>
 
-<script>
-// ── Load from localStorage (persists across sessions) ──
-var players = JSON.parse(localStorage.getItem('fpl_players') || '["Liam"]');
-var scores  = JSON.parse(localStorage.getItem('fpl_scores')  || '{}');
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCbbC8frRQpq55yFtWb1J3mN-yWyEWn5CQ",
+  authDomain: "fpl-wordle-mini-league.firebaseapp.com",
+  databaseURL: "https://fpl-wordle-mini-league-default-rtdb.firebaseio.com",
+  projectId: "fpl-wordle-mini-league",
+  storageBucket: "fpl-wordle-mini-league.firebasestorage.app",
+  messagingSenderId: "974534292185",
+  appId: "1:974534292185:web:446bf87487b565c11744c8",
+  measurementId: "G-H4D3BJRNR7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+var players  = [];
+var scores   = {};
 var expanded = {};
-var POINTS = {1:10,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1,'X':0};
+var POINTS   = {1:10,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1,'X':0};
+var ready    = false;
+
+// ── Listen for real-time updates from Firebase ──
+onValue(ref(db, 'league'), function(snapshot) {
+  var data = snapshot.val() || {};
+  players  = data.players || [];
+  scores   = data.scores  || {};
+  if (!ready) {
+    ready = true;
+    document.getElementById('loading').style.display = 'none';
+    show('table');
+  } else {
+    renderTable();
+    renderSelect();
+    renderSquad();
+  }
+});
 
 function save() {
-  localStorage.setItem('fpl_players', JSON.stringify(players));
-  localStorage.setItem('fpl_scores',  JSON.stringify(scores));
+  set(ref(db, 'league'), { players: players, scores: scores });
 }
 
-function show(v) {
-  document.getElementById('view-table').style.display  = v==='table'  ? 'block' : 'none';
-  document.getElementById('view-submit').style.display = v==='submit' ? 'block' : 'none';
-  document.getElementById('view-manage').style.display = v==='manage' ? 'block' : 'none';
-  document.getElementById('btn-table').style.background  = v==='table'  ? '#00ff85' : '#38003c';
-  document.getElementById('btn-table').style.color       = v==='table'  ? '#38003c' : '#7a4a8a';
-  document.getElementById('btn-submit').style.background = v==='submit' ? '#00ff85' : '#38003c';
-  document.getElementById('btn-submit').style.color      = v==='submit' ? '#38003c' : '#7a4a8a';
-  document.getElementById('btn-manage').style.background = v==='manage' ? '#00ff85' : '#38003c';
-  document.getElementById('btn-manage').style.color      = v==='manage' ? '#38003c' : '#7a4a8a';
+// ── Expose functions to global scope (needed with type="module") ──
+window.show = function(v) {
+  ['table','submit','manage'].forEach(function(s) {
+    document.getElementById('view-'+s).style.display = v===s ? 'block' : 'none';
+    document.getElementById('btn-'+s).style.background = v===s ? '#00ff85' : '#38003c';
+    document.getElementById('btn-'+s).style.color      = v===s ? '#38003c' : '#7a4a8a';
+  });
   if (v==='table')  renderTable();
   if (v==='submit') renderSelect();
   if (v==='manage') renderSquad();
-}
+};
 
-function parseScore(text) {
-  var m = text.match(/([1-9]|10|X)\/\d+/i);
-  if (!m) return null;
-  var raw = m[1].toUpperCase();
-  var g = raw==='X' ? 'X' : parseInt(raw);
-  var pm = text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}/i);
-  var pts = POINTS[g] !== undefined ? POINTS[g] : 0;
-  return { guesses:g, puzzle: pm ? pm[0] : null, points:pts };
-}
-
-function toggleHistory(name) {
+window.toggleHistory = function(name) {
   expanded[name] = !expanded[name];
   renderTable();
-}
+};
 
-function renderTable() {
-  var data = players.map(function(name) {
-    var ps = scores[name] || [];
-    var pts = 0;
-    for (var i=0; i<ps.length; i++) pts += ps[i].points||0;
-    var avg = null;
-    if (ps.length) {
-      var s=0;
-      for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X' ? 11 : ps[i].guesses);
-      avg = (s/ps.length).toFixed(1);
-    }
-    return { name:name, pts:pts, played:ps.length, avg:avg, history: ps.slice().reverse() };
-  });
-  data.sort(function(a,b){ return b.pts-a.pts || (parseFloat(a.avg)||99)-(parseFloat(b.avg)||99); });
-
-  var html = '';
-  if (!data.length) {
-    html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No scores yet!</div>';
-  } else {
-    for (var i=0; i<data.length; i++) {
-      var row = data[i];
-      var bg     = i===0 ? 'rgba(0,255,133,0.08)' : 'rgba(56,0,60,0.3)';
-      var border = i===0 ? '1px solid rgba(0,255,133,0.3)' : '1px solid #1a0028';
-      var medal  = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'';
-      var ptsCol = i===0?'#00ff85':i===1?'#c0c0c0':i===2?'#cd7f32':'#e8e8f8';
-      var safeName = row.name.replace(/'/g,"\\'");
-      var isOpen = expanded[row.name];
-
-      html += '<div style="background:'+bg+';border:'+border+';border-radius:'+(isOpen?'6px 6px 0 0':'6px')+';margin-bottom:'+(isOpen?'0':'4px')+';overflow:hidden;">';
-      html += '<div style="display:grid;grid-template-columns:36px 1fr 38px 44px 48px;gap:4px;align-items:center;padding:13px 10px;cursor:pointer;" onclick="toggleHistory(\''+safeName+'\')">';
-      html += '<div style="font-size:'+(i<3?'18':'13')+'px;text-align:center;">'+medal+'</div>';
-      html += '<div style="padding-left:4px;">'
-        + '<div style="font-weight:700;font-size:14px;color:'+(i===0?'#fff':'#d0c0e0')+';">'+row.name+' <span style="font-size:10px;color:#5a3a6a;">'+(isOpen?'▲':'▼')+'</span></div>'
-        + '<div style="font-size:10px;color:#5a3a6a;font-family:monospace;margin-top:1px;">tap for history</div>'
-        + '</div>';
-      html += '<div style="text-align:center;font-family:monospace;font-size:13px;font-weight:700;color:#a070c0;">'+row.played+'</div>';
-      html += '<div style="text-align:center;font-family:monospace;font-size:12px;color:#8060a0;">'+(row.avg||'—')+'</div>';
-      html += '<div style="text-align:center;font-family:monospace;font-size:18px;font-weight:900;color:'+ptsCol+';">'+row.pts+'</div>';
-      html += '</div>';
-
-      if (isOpen) {
-        html += '<div style="background:#0d001a;border-top:1px solid #2a0a3a;padding:10px 12px;">';
-        if (!row.history.length) {
-          html += '<div style="font-family:monospace;font-size:12px;color:#4a2a5a;padding:6px 0;">No submissions yet.</div>';
-        } else {
-          html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:8px;">SUBMISSION HISTORY</div>';
-          for (var j=0; j<row.history.length; j++) {
-            var e = row.history[j];
-            var scoreCol = e.guesses==='X'?'#e63946':e.guesses<=4?'#00ff85':e.guesses<=7?'#f4d03f':'#e67e22';
-            var date = e.puzzle || formatDate(e.at);
-            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a0028;">'
-              + '<div style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+date+'</div>'
-              + '<div style="font-family:monospace;font-size:12px;"><span style="color:'+scoreCol+';font-weight:700;">'+e.guesses+'/10</span>'
-              + ' <span style="color:#f4d03f;margin-left:8px;">+'+e.points+'pts</span></div>'
-              + '</div>';
-          }
-        }
-        html += '</div>';
-      }
-      html += '</div>';
-    }
-  }
-  document.getElementById('table-body').innerHTML = html;
-}
-
-function formatDate(ts) {
-  if (!ts) return 'Unknown date';
-  var d = new Date(ts);
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return months[d.getMonth()] + ' ' + d.getDate();
-}
-
-function renderSelect() {
-  var sel = document.getElementById('player-select');
-  sel.innerHTML = players.length===0
-    ? '<option>Add players in SQUAD first</option>'
-    : players.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
-}
-
-function submitScore() {
-  var msg = document.getElementById('submit-msg');
+window.submitScore = function() {
+  var msg    = document.getElementById('submit-msg');
   msg.style.display = 'none';
   var player = document.getElementById('player-select').value;
   var text   = document.getElementById('paste-area').value.trim();
@@ -206,7 +149,116 @@ function submitScore() {
   document.getElementById('paste-area').value = '';
   var emoji = parsed.guesses==='X'?'😬':parsed.guesses<=3?'🔥':parsed.guesses<=6?'✅':'😅';
   showMsg('submit-msg', emoji+' Saved! '+parsed.guesses+'/10 → '+parsed.points+' pts'+(parsed.puzzle?' ('+parsed.puzzle+')':''), 'rgba(0,255,133,0.06)','#00ff85','1px solid rgba(0,255,133,0.4)');
+};
+
+window.addPlayer = function() {
+  var input = document.getElementById('new-name');
+  var name  = input.value.trim();
+  if (!name) { showMsg('add-msg','⚠ Enter a name.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
+  if (players.indexOf(name) > -1) { showMsg('add-msg','⚠ Already exists.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
+  players.push(name);
+  save();
+  input.value = '';
+  document.getElementById('add-msg').style.display = 'none';
+  renderSquad();
+};
+
+window.removePlayer = function(name) {
+  players = players.filter(function(n){ return n!==name; });
+  delete scores[name];
+  delete expanded[name];
+  save();
+  renderSquad();
   renderTable();
+};
+
+window.resetAll = function() {
+  if (!confirm('Reset ALL scores? This cannot be undone.')) return;
+  scores = {};
+  expanded = {};
+  save();
+  renderSquad();
+  renderTable();
+};
+
+// ── Render functions ──
+function parseScore(text) {
+  var m = text.match(/([1-9]|10|X)\/\d+/i);
+  if (!m) return null;
+  var raw = m[1].toUpperCase();
+  var g   = raw==='X' ? 'X' : parseInt(raw);
+  var pm  = text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}/i);
+  var pts = POINTS[g] !== undefined ? POINTS[g] : 0;
+  return { guesses:g, puzzle: pm ? pm[0] : null, points:pts };
+}
+
+function renderTable() {
+  var data = players.map(function(name) {
+    var ps  = scores[name] || [];
+    var pts = 0;
+    for (var i=0; i<ps.length; i++) pts += ps[i].points||0;
+    var avg = null;
+    if (ps.length) {
+      var s=0;
+      for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X' ? 11 : ps[i].guesses);
+      avg = (s/ps.length).toFixed(1);
+    }
+    return { name:name, pts:pts, played:ps.length, avg:avg, history:ps.slice().reverse() };
+  });
+  data.sort(function(a,b){ return b.pts-a.pts || (parseFloat(a.avg)||99)-(parseFloat(b.avg)||99); });
+
+  var html = '';
+  if (!data.length) {
+    html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No players yet — add some in SQUAD!</div>';
+  } else {
+    for (var i=0; i<data.length; i++) {
+      var row    = data[i];
+      var bg     = i===0 ? 'rgba(0,255,133,0.08)' : 'rgba(56,0,60,0.3)';
+      var border = i===0 ? '1px solid rgba(0,255,133,0.3)' : '1px solid #1a0028';
+      var medal  = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'';
+      var ptsCol = i===0?'#00ff85':i===1?'#c0c0c0':i===2?'#cd7f32':'#e8e8f8';
+      var sn     = row.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var isOpen = expanded[row.name];
+
+      html += '<div style="background:'+bg+';border:'+border+';border-radius:'+(isOpen?'6px 6px 0 0':'6px')+';margin-bottom:'+(isOpen?'0':'4px')+';overflow:hidden;">';
+      html += '<div style="display:grid;grid-template-columns:36px 1fr 38px 44px 48px;gap:4px;align-items:center;padding:13px 10px;cursor:pointer;" onclick="toggleHistory(\''+sn+'\')">';
+      html += '<div style="font-size:'+(i<3?'18':'13')+'px;text-align:center;">'+medal+'</div>';
+      html += '<div style="padding-left:4px;"><div style="font-weight:700;font-size:14px;color:'+(i===0?'#fff':'#d0c0e0')+';">'+row.name+' <span style="font-size:10px;color:#5a3a6a;">'+(isOpen?'▲':'▼')+'</span></div>'
+        + '<div style="font-size:10px;color:#5a3a6a;font-family:monospace;margin-top:1px;">tap for history</div></div>';
+      html += '<div style="text-align:center;font-family:monospace;font-size:13px;font-weight:700;color:#a070c0;">'+row.played+'</div>';
+      html += '<div style="text-align:center;font-family:monospace;font-size:12px;color:#8060a0;">'+(row.avg||'—')+'</div>';
+      html += '<div style="text-align:center;font-family:monospace;font-size:18px;font-weight:900;color:'+ptsCol+';">'+row.pts+'</div>';
+      html += '</div>';
+
+      if (isOpen) {
+        html += '<div style="background:#0d001a;border-top:1px solid #2a0a3a;padding:10px 12px;">';
+        if (!row.history.length) {
+          html += '<div style="font-family:monospace;font-size:12px;color:#4a2a5a;padding:6px 0;">No submissions yet.</div>';
+        } else {
+          html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:8px;">SUBMISSION HISTORY</div>';
+          for (var j=0; j<row.history.length; j++) {
+            var e  = row.history[j];
+            var sc = e.guesses==='X'?'#e63946':e.guesses<=4?'#00ff85':e.guesses<=7?'#f4d03f':'#e67e22';
+            var dt = e.puzzle || formatDate(e.at);
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a0028;">'
+              + '<div style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+dt+'</div>'
+              + '<div style="font-family:monospace;font-size:12px;"><span style="color:'+sc+';font-weight:700;">'+e.guesses+'/10</span>'
+              + ' <span style="color:#f4d03f;margin-left:8px;">+'+e.points+'pts</span></div></div>';
+          }
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+  }
+  document.getElementById('table-body').innerHTML = html;
+}
+
+function renderSelect() {
+  var sel = document.getElementById('player-select');
+  sel.innerHTML = players.length===0
+    ? '<option>Add players in SQUAD first</option>'
+    : players.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
 }
 
 function renderSquad() {
@@ -218,44 +270,22 @@ function renderSquad() {
       var name = players[i];
       var ps   = scores[name]||[];
       var pts  = 0; for (var j=0; j<ps.length; j++) pts += ps[j].points||0;
-      var safeName = name.replace(/'/g,"\\'");
+      var sn   = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:'+(i<players.length-1?'1px solid #1a0028':'none')+';">'
         + '<div><div style="font-weight:700;font-size:14px;">'+name+'</div>'
         + '<div style="font-size:11px;color:#5a3a6a;font-family:monospace;">'+ps.length+' submission'+(ps.length!==1?'s':'')+' · '+pts+' pts</div></div>'
-        + '<button onclick="removePlayer(\''+safeName+'\')" style="padding:5px 12px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">RELEASE</button>'
+        + '<button onclick="removePlayer(\''+sn+'\')" style="padding:5px 12px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">RELEASE</button>'
         + '</div>';
     }
   }
   document.getElementById('squad-list').innerHTML = html;
 }
 
-function addPlayer() {
-  var input = document.getElementById('new-name');
-  var name  = input.value.trim();
-  if (!name) { showMsg('add-msg','⚠ Enter a name.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
-  if (players.indexOf(name) > -1) { showMsg('add-msg','⚠ Already exists.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
-  players.push(name);
-  save();
-  input.value = '';
-  document.getElementById('add-msg').style.display = 'none';
-  renderSquad();
-}
-
-function removePlayer(name) {
-  players = players.filter(function(n){ return n!==name; });
-  delete scores[name];
-  delete expanded[name];
-  save();
-  renderSquad();
-  renderTable();
-}
-
-function resetAll() {
-  scores = {};
-  expanded = {};
-  save();
-  renderSquad();
-  renderTable();
+function formatDate(ts) {
+  if (!ts) return 'Unknown date';
+  var d = new Date(ts);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + d.getDate();
 }
 
 function showMsg(id, text, bg, color, border) {
@@ -266,8 +296,6 @@ function showMsg(id, text, bg, color, border) {
   el.style.border = border;
   el.style.display = 'block';
 }
-
-renderTable();
 </script>
 </body>
 </html>
