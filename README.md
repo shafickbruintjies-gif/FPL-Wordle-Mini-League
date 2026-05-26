@@ -1,1 +1,0 @@
-# FPL-Wordle-Mini-League
