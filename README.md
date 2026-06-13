@@ -62,7 +62,7 @@
 
 <!-- HALL OF SHAME -->
 <div id="view-shame" style="padding:16px;display:none;">
-  <div style="font-size:10px;letter-spacing:3px;color:#e63946;font-family:monospace;margin-bottom:12px;">HALL OF SHAME — MOST X/10s</div>
+  <div style="font-size:10px;letter-spacing:3px;color:#e63946;font-family:monospace;margin-bottom:12px;">HALL OF SHAME — SHAME TITLES</div>
   <div id="shame-body"></div>
 </div>
 
@@ -101,6 +101,7 @@ const db  = getDatabase(app);
 var players  = [];
 var scores   = {};
 var medals   = {}; // { playerName: { gold:0, silver:0, bronze:0 } }
+var shame    = {}; // { playerName: count }
 var expanded = {};
 var POINTS   = {1:10,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1,'X':0};
 var ready    = false;
@@ -110,6 +111,7 @@ onValue(ref(db, 'league'), function(snapshot) {
   players = data.players || [];
   scores  = data.scores  || {};
   medals  = data.medals  || {};
+  shame   = data.shame   || {};
   if (!ready) {
     ready = true;
     document.getElementById('loading').style.display = 'none';
@@ -124,7 +126,7 @@ onValue(ref(db, 'league'), function(snapshot) {
 });
 
 function save() {
-  set(ref(db, 'league'), { players:players, scores:scores, medals:medals });
+  set(ref(db, 'league'), { players:players, scores:scores, medals:medals, shame:shame });
 }
 
 // ── Sorting with full tiebreaker ──
@@ -229,6 +231,20 @@ window.resetAll = function() {
     var name = sorted[i].name;
     if (!medals[name]) medals[name] = { gold:0, silver:0, bronze:0 };
     medals[name][podium[i]] = (medals[name][podium[i]] || 0) + 1;
+  }
+
+  // Work out shame title — most X/10s, ties both get it
+  var xCounts = players.map(function(name) {
+    var ps = scores[name] || [];
+    var xs = 0;
+    for (var i=0; i<ps.length; i++) if (ps[i].guesses==='X') xs++;
+    return { name:name, xs:xs };
+  });
+  var maxXs = Math.max.apply(null, xCounts.map(function(p){ return p.xs; }));
+  if (maxXs > 0) {
+    xCounts.filter(function(p){ return p.xs === maxXs; }).forEach(function(p) {
+      shame[p.name] = (shame[p.name] || 0) + 1;
+    });
   }
 
   scores   = {};
@@ -361,27 +377,25 @@ function renderFame() {
 
 function renderShame() {
   var data = players.map(function(name) {
-    var ps = scores[name] || [];
-    var xs = 0;
-    for (var i=0; i<ps.length; i++) if (ps[i].guesses==='X') xs++;
-    return { name:name, xs:xs };
-  }).sort(function(a,b) { return b.xs - a.xs; });
+    return { name:name, titles: shame[name] || 0 };
+  }).sort(function(a,b) { return b.titles - a.titles; });
 
   var html = '';
-  if (!data.length) {
-    html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No shame yet!</div>';
+  if (!data.length || data.every(function(d){ return d.titles===0; })) {
+    html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No shame titles yet — end a mini league to populate this!</div>';
   } else {
     for (var i=0; i<data.length; i++) {
-      var row = data[i];
-      var bg     = i===0 && row.xs>0 ? 'rgba(230,57,70,0.08)' : 'rgba(56,0,60,0.3)';
-      var border = i===0 && row.xs>0 ? '1px solid rgba(230,57,70,0.3)'  : '1px solid #1a0028';
+      var row    = data[i];
+      var top    = i===0 && row.titles>0;
+      var bg     = top ? 'rgba(230,57,70,0.08)' : 'rgba(56,0,60,0.3)';
+      var border = top ? '1px solid rgba(230,57,70,0.3)' : '1px solid #1a0028';
       html += '<div style="background:'+bg+';border:'+border+';border-radius:6px;margin-bottom:4px;">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 14px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;">'
         + '<div style="display:flex;align-items:center;gap:12px;">'
-        + '<div style="font-size:'+(i===0&&row.xs>0?'20':'13')+'px;">'+(i===0&&row.xs>0?'💀':(i+1))+'</div>'
-        + '<div style="font-weight:700;font-size:14px;color:'+(i===0&&row.xs>0?'#e63946':'#d0c0e0')+';">'+row.name+'</div>'
+        + '<div style="font-size:'+(top?'20':'13')+'px;">'+(top?'💀':(i+1))+'</div>'
+        + '<div style="font-weight:700;font-size:14px;color:'+(top?'#e63946':'#d0c0e0')+';">'+row.name+'</div>'
         + '</div>'
-        + '<div style="font-family:monospace;font-size:20px;font-weight:900;color:#e63946;">'+row.xs+' <span style="font-size:12px;color:#6a2a3a;">X/10s</span></div>'
+        + '<div style="font-family:monospace;font-size:20px;font-weight:900;color:#e63946;">'+row.titles+' <span style="font-size:12px;color:#6a2a3a;">title'+(row.titles!==1?'s':'')+'</span></div>'
         + '</div></div>';
     }
   }
