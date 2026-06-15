@@ -9,7 +9,7 @@
 
 <div style="background:#38003c;padding:20px;text-align:center;">
   <div style="font-size:28px;font-weight:900;color:#fff;">FPL Wordle</div>
-  <div style="font-size:28px;font-weight:900;color:#00ff85;">League of Champions</div>
+  <div style="font-size:28px;font-weight:900;color:#00ff85;">Mini League</div>
   <div style="font-size:10px;letter-spacing:3px;color:#a070b0;margin-top:6px;font-family:monospace;">ONE TWO · /10 SCORING</div>
 </div>
 
