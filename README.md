@@ -103,7 +103,7 @@ var scores   = {};
 var medals   = {}; // { playerName: { gold:0, silver:0, bronze:0 } }
 var shame    = {}; // { playerName: count }
 var expanded = {};
-var POINTS   = {1:10,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1,'X':0};
+var POINTS   = {1:25,2:18,3:15,4:12,5:18,6:8,7:6,8:4,9:2,10:1,'X':0};
 var ready    = false;
 
 onValue(ref(db, 'league'), function(snapshot) {
