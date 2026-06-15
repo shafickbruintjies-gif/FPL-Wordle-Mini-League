@@ -36,7 +36,7 @@
   </div>
   <div id="table-body"></div>
   <div style="margin-top:16px;padding:12px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:1.8;">
-    1/10=25pts · 2=18 · 3=15 · 4=12 · 5=10 · 6=8 · 7=6 · 8=4 · 9=2 · 10=1 · X=0
+    1/10=10pts · 2=9 · 3=8 · 4=7 · 5=6 · 6=5 · 7=4 · 8=3 · 9=2 · 10=1 · X=0
   </div>
 </div>
 
@@ -103,7 +103,7 @@ var scores   = {};
 var medals   = {}; // { playerName: { gold:0, silver:0, bronze:0 } }
 var shame    = {}; // { playerName: count }
 var expanded = {};
-var POINTS   = {1:25,2:18,3:15,4:12,5:10,6:8,7:6,8:4,9:2,10:1,'X':0};
+var POINTS   = {1:10,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1,'X':0};
 var ready    = false;
 
 onValue(ref(db, 'league'), function(snapshot) {
