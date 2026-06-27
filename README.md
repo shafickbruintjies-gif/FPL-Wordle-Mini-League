@@ -36,7 +36,7 @@
   </div>
   <div id="table-body"></div>
   <div style="margin-top:16px;padding:12px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:1.8;">
-    1/10=25pts · 2=18 · 3=15 · 4=12 · 5=10 · 6=8 · 7=6 · 8=4 · 9=2 · 10=1 · X=0
+    1/10=10pts · 2=9 · 3=8 · 4=7 · 5=6 · 6=5 · 7=4 · 8=3 · 9=2 · 10=1 · X=0
   </div>
 </div>
 
@@ -77,6 +77,9 @@
     <div id="add-msg" style="display:none;margin-top:8px;padding:10px;border-radius:6px;font-family:monospace;font-size:12px;"></div>
   </div>
   <div id="squad-list" style="background:rgba(56,0,60,0.35);border:1px solid #2a0a3a;border-radius:8px;overflow:hidden;margin-bottom:14px;"></div>
+  <button onclick="exportData()" style="padding:10px 18px;background:transparent;border:1px solid #3a1a4a;color:#00ff85;border-radius:4px;font-family:monospace;font-size:12px;cursor:pointer;margin-bottom:10px;width:100%;">📋 Export All Submissions</button>
+  <textarea id="export-area" rows="10" style="display:none;width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:11px;font-family:monospace;resize:vertical;line-height:1.6;"></textarea>
+  <div id="export-msg" style="display:none;margin-top:8px;padding:10px;border-radius:6px;font-family:monospace;font-size:12px;color:#00ff85;background:rgba(0,255,133,0.06);border:1px solid rgba(0,255,133,0.3);">✅ Copied! Paste this to Claude for your article.</div>
   <button onclick="resetAll()" style="padding:10px 18px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:12px;cursor:pointer;">🔄 End Mini League &amp; Reset Scores</button>
 </div>
 
@@ -103,7 +106,7 @@ var scores   = {};
 var medals   = {}; // { playerName: { gold:0, silver:0, bronze:0 } }
 var shame    = {}; // { playerName: count }
 var expanded = {};
-var POINTS   = {1:25,2:18,3:15,4:12,5:10,6:8,7:6,8:4,9:2,10:1,'X':0};
+var POINTS   = {1:10,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1,'X':0};
 var ready    = false;
 
 onValue(ref(db, 'league'), function(snapshot) {
@@ -134,7 +137,7 @@ function getSortedData() {
   return players.map(function(name) {
     var ps  = scores[name] || [];
     var pts = 0;
-    var counts = {}; // counts[1..10 or 'X']
+    var counts = {};
     for (var i=1; i<=10; i++) counts[i] = 0;
     counts['X'] = 0;
     for (var i=0; i<ps.length; i++) {
@@ -193,7 +196,7 @@ window.submitScore = function() {
       }
     }
   }
-  scores[player] = existing.concat([{ guesses:parsed.guesses, puzzle:parsed.puzzle, points:parsed.points, at:Date.now() }]);
+  scores[player] = existing.concat([{ guesses:parsed.guesses, puzzle:parsed.puzzle, points:parsed.points, at:Date.now(), raw:text }]);
   save();
   document.getElementById('paste-area').value = '';
   var emoji = parsed.guesses==='X'?'😬':parsed.guesses<=3?'🔥':parsed.guesses<=6?'✅':'😅';
@@ -221,7 +224,41 @@ window.removePlayer = function(name) {
   renderTable();
 };
 
-window.resetAll = function() {
+window.exportData = function() {
+  if (!players.length) return;
+  var out = '=== MINI LEAGUE EXPORT ===\n';
+  out += 'Generated: ' + new Date().toDateString() + '\n\n';
+  players.forEach(function(name) {
+    var ps = scores[name] || [];
+    if (!ps.length) return;
+    out += '──────────────────────────\n';
+    out += 'Player: ' + name + '\n';
+    out += '──────────────────────────\n';
+    ps.forEach(function(e) {
+      var date = e.puzzle || formatDate(e.at);
+      out += date + ' | ' + e.guesses + '/10\n';
+      if (e.raw) {
+        // Extract just the emoji lines from raw text
+        var lines = e.raw.split('\n');
+        lines.forEach(function(line) {
+          var trimmed = line.trim();
+          if (trimmed.match(/^[🟩🟨🟥⬜]+$/u)) out += trimmed + '\n';
+        });
+      }
+      out += '\n';
+    });
+  });
+  var area = document.getElementById('export-area');
+  area.value = out;
+  area.style.display = 'block';
+  area.select();
+  try {
+    navigator.clipboard.writeText(out).then(function() {
+      document.getElementById('export-msg').style.display = 'block';
+      setTimeout(function(){ document.getElementById('export-msg').style.display = 'none'; }, 4000);
+    });
+  } catch(e) {}
+};
   if (!confirm('End this mini league and reset scores? Winners will be saved to the Hall of Fame.')) return;
 
   // Work out top 3 from current scores
