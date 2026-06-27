@@ -13,7 +13,6 @@
   <div style="font-size:10px;letter-spacing:3px;color:#a070b0;margin-top:6px;font-family:monospace;">ONE TWO · /10 SCORING</div>
 </div>
 
-<!-- NAV -->
 <div style="display:flex;border-top:2px solid #1a0020;overflow-x:auto;">
   <button id="btn-table"  onclick="show('table')"  style="flex:1;min-width:60px;padding:12px 2px;background:#00ff85;color:#38003c;border:none;border-right:1px solid #1a0020;font-family:monospace;font-size:10px;font-weight:900;letter-spacing:1px;cursor:pointer;">🏆 TABLE</button>
   <button id="btn-submit" onclick="show('submit')" style="flex:1;min-width:60px;padding:12px 2px;background:#38003c;color:#7a4a8a;border:none;border-right:1px solid #1a0020;font-family:monospace;font-size:10px;font-weight:900;letter-spacing:1px;cursor:pointer;">⚽ SUBMIT</button>
@@ -77,9 +76,9 @@
     <div id="add-msg" style="display:none;margin-top:8px;padding:10px;border-radius:6px;font-family:monospace;font-size:12px;"></div>
   </div>
   <div id="squad-list" style="background:rgba(56,0,60,0.35);border:1px solid #2a0a3a;border-radius:8px;overflow:hidden;margin-bottom:14px;"></div>
-  <button onclick="exportData()" style="padding:10px 18px;background:transparent;border:1px solid #3a1a4a;color:#00ff85;border-radius:4px;font-family:monospace;font-size:12px;cursor:pointer;margin-bottom:10px;width:100%;">📋 Export All Submissions</button>
-  <textarea id="export-area" rows="10" style="display:none;width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:11px;font-family:monospace;resize:vertical;line-height:1.6;"></textarea>
-  <div id="export-msg" style="display:none;margin-top:8px;padding:10px;border-radius:6px;font-family:monospace;font-size:12px;color:#00ff85;background:rgba(0,255,133,0.06);border:1px solid rgba(0,255,133,0.3);">✅ Copied! Paste this to Claude for your article.</div>
+  <button onclick="exportData()" style="width:100%;padding:10px 18px;background:transparent;border:1px solid #3a1a4a;color:#00ff85;border-radius:4px;font-family:monospace;font-size:12px;cursor:pointer;margin-bottom:10px;">📋 Export All Submissions</button>
+  <textarea id="export-area" rows="10" style="display:none;width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:11px;font-family:monospace;resize:vertical;line-height:1.6;margin-bottom:8px;"></textarea>
+  <div id="export-msg" style="display:none;margin-bottom:10px;padding:10px;border-radius:6px;font-family:monospace;font-size:12px;color:#00ff85;background:rgba(0,255,133,0.06);border:1px solid rgba(0,255,133,0.3);">✅ Copied! Paste this to Claude for your article.</div>
   <button onclick="resetAll()" style="padding:10px 18px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:12px;cursor:pointer;">🔄 End Mini League &amp; Reset Scores</button>
 </div>
 
@@ -103,8 +102,8 @@ const db  = getDatabase(app);
 
 var players  = [];
 var scores   = {};
-var medals   = {}; // { playerName: { gold:0, silver:0, bronze:0 } }
-var shame    = {}; // { playerName: count }
+var medals   = {};
+var shame    = {};
 var expanded = {};
 var POINTS   = {1:10,2:9,3:8,4:7,5:6,6:5,7:4,8:3,9:2,10:1,'X':0};
 var ready    = false;
@@ -132,7 +131,6 @@ function save() {
   set(ref(db, 'league'), { players:players, scores:scores, medals:medals, shame:shame });
 }
 
-// ── Sorting with full tiebreaker ──
 function getSortedData() {
   return players.map(function(name) {
     var ps  = scores[name] || [];
@@ -141,13 +139,13 @@ function getSortedData() {
     for (var i=1; i<=10; i++) counts[i] = 0;
     counts['X'] = 0;
     for (var i=0; i<ps.length; i++) {
-      pts += ps[i].points || 0;
       var g = ps[i].guesses;
+      pts += POINTS[g] !== undefined ? POINTS[g] : 0;
       if (counts[g] !== undefined) counts[g]++;
     }
     var avg = null;
     if (ps.length) {
-      var s=0;
+      var s = 0;
       for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X' ? 11 : ps[i].guesses);
       avg = (s/ps.length).toFixed(1);
     }
@@ -225,12 +223,13 @@ window.removePlayer = function(name) {
 };
 
 window.exportData = function() {
-  if (!players.length) return;
   var out = '=== MINI LEAGUE EXPORT ===\n';
   out += 'Generated: ' + new Date().toDateString() + '\n\n';
+  var hasData = false;
   players.forEach(function(name) {
     var ps = scores[name] || [];
     if (!ps.length) return;
+    hasData = true;
     out += '──────────────────────────\n';
     out += 'Player: ' + name + '\n';
     out += '──────────────────────────\n';
@@ -238,16 +237,16 @@ window.exportData = function() {
       var date = e.puzzle || formatDate(e.at);
       out += date + ' | ' + e.guesses + '/10\n';
       if (e.raw) {
-        // Extract just the emoji lines from raw text
         var lines = e.raw.split('\n');
         lines.forEach(function(line) {
           var trimmed = line.trim();
-          if (trimmed.match(/^[🟩🟨🟥⬜]+$/u)) out += trimmed + '\n';
+          if (/^[\u{1F7E9}\u{1F7E8}\u{1F7E5}\u{2B1C}]+$/u.test(trimmed)) out += trimmed + '\n';
         });
       }
       out += '\n';
     });
   });
+  if (!hasData) { alert('No submissions to export yet!'); return; }
   var area = document.getElementById('export-area');
   area.value = out;
   area.style.display = 'block';
@@ -255,13 +254,13 @@ window.exportData = function() {
   try {
     navigator.clipboard.writeText(out).then(function() {
       document.getElementById('export-msg').style.display = 'block';
-      setTimeout(function(){ document.getElementById('export-msg').style.display = 'none'; }, 4000);
+      setTimeout(function() { document.getElementById('export-msg').style.display = 'none'; }, 4000);
     });
   } catch(e) {}
 };
-  if (!confirm('End this mini league and reset scores? Winners will be saved to the Hall of Fame.')) return;
 
-  // Work out top 3 from current scores
+window.resetAll = function() {
+  if (!confirm('End this mini league and reset scores? Winners will be saved to the Hall of Fame.')) return;
   var sorted = getSortedData();
   var podium = ['gold','silver','bronze'];
   for (var i=0; i<Math.min(3, sorted.length); i++) {
@@ -269,8 +268,6 @@ window.exportData = function() {
     if (!medals[name]) medals[name] = { gold:0, silver:0, bronze:0 };
     medals[name][podium[i]] = (medals[name][podium[i]] || 0) + 1;
   }
-
-  // Work out shame title — most X/10s, ties both get it
   var xCounts = players.map(function(name) {
     var ps = scores[name] || [];
     var xs = 0;
@@ -283,7 +280,6 @@ window.exportData = function() {
       shame[p.name] = (shame[p.name] || 0) + 1;
     });
   }
-
   scores   = {};
   expanded = {};
   save();
@@ -293,7 +289,6 @@ window.exportData = function() {
   renderShame();
 };
 
-// ── Render functions ──
 function parseScore(text) {
   var m = text.match(/([1-9]|10|X)\/\d+/i);
   if (!m) return null;
@@ -334,7 +329,6 @@ function renderTable() {
 
       if (isOpen) {
         html += '<div style="background:#0d001a;border-top:1px solid #2a0a3a;padding:10px 12px;">';
-        // Score breakdown
         html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:6px;">SCORE BREAKDOWN</div>';
         html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">';
         for (var g=1; g<=10; g++) {
@@ -346,12 +340,10 @@ function renderTable() {
         }
         if ((row.counts['X']||0)>0) {
           html += '<div style="background:rgba(56,0,60,0.6);border:1px solid #3a1a4a;border-radius:4px;padding:4px 8px;font-family:monospace;font-size:11px;">'
-            + '<span style="color:#e63946;">X/10</span> <span style="color:#f4d03f;">×'+(row.counts['X'])+'</span></div>';
+            + '<span style="color:#e63946;">X/10</span> <span style="color:#f4d03f;">×'+row.counts['X']+'</span></div>';
         }
         if (!row.played) html += '<div style="font-family:monospace;font-size:12px;color:#4a2a5a;">No submissions yet.</div>';
         html += '</div>';
-
-        // History
         if (row.history.length) {
           html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:6px;">SUBMISSION HISTORY</div>';
           for (var j=0; j<row.history.length; j++) {
@@ -361,7 +353,7 @@ function renderTable() {
             html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1a0028;">'
               + '<div style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+dt+'</div>'
               + '<div style="font-family:monospace;font-size:12px;"><span style="color:'+sc+';font-weight:700;">'+e.guesses+'/10</span>'
-              + ' <span style="color:#f4d03f;margin-left:8px;">+'+e.points+'pts</span></div></div>';
+              + ' <span style="color:#f4d03f;margin-left:8px;">+'+POINTS[e.guesses]+'pts</span></div></div>';
           }
         }
         html += '</div>';
@@ -386,7 +378,6 @@ function renderFame() {
   if (!data.length || data.every(function(d){ return d.gold+d.silver+d.bronze===0; })) {
     html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No titles yet — end a mini league to populate this!</div>';
   } else {
-    // Header
     html += '<div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;padding:6px 10px;margin-bottom:4px;">'
       + '<div></div>'
       + '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;">PLAYER</div>'
@@ -395,10 +386,10 @@ function renderFame() {
       + '<div style="font-size:16px;text-align:center;">🥉</div>'
       + '</div>';
     for (var i=0; i<data.length; i++) {
-      var row = data[i];
+      var row   = data[i];
       var total = row.gold + row.silver + row.bronze;
-      var bg = i===0 && total>0 ? 'rgba(255,215,0,0.07)' : 'rgba(56,0,60,0.3)';
-      var border = i===0 && total>0 ? '1px solid rgba(255,215,0,0.3)' : '1px solid #1a0028';
+      var bg     = i===0&&total>0 ? 'rgba(255,215,0,0.07)' : 'rgba(56,0,60,0.3)';
+      var border = i===0&&total>0 ? '1px solid rgba(255,215,0,0.3)' : '1px solid #1a0028';
       html += '<div style="background:'+bg+';border:'+border+';border-radius:6px;margin-bottom:4px;">'
         + '<div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;align-items:center;padding:12px 10px;">'
         + '<div style="font-size:'+(i===0&&total>0?'17':'12')+'px;text-align:center;">'+(i===0&&total>0?'👑':(i+1))+'</div>'
@@ -422,8 +413,8 @@ function renderShame() {
     html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No shame titles yet — end a mini league to populate this!</div>';
   } else {
     for (var i=0; i<data.length; i++) {
-      var row    = data[i];
-      var top    = i===0 && row.titles>0;
+      var row  = data[i];
+      var top  = i===0 && row.titles>0;
       var bg     = top ? 'rgba(230,57,70,0.08)' : 'rgba(56,0,60,0.3)';
       var border = top ? '1px solid rgba(230,57,70,0.3)' : '1px solid #1a0028';
       html += '<div style="background:'+bg+';border:'+border+';border-radius:6px;margin-bottom:4px;">'
@@ -454,7 +445,8 @@ function renderSquad() {
     for (var i=0; i<players.length; i++) {
       var name = players[i];
       var ps   = scores[name]||[];
-      var pts  = 0; for (var j=0; j<ps.length; j++) pts += ps[j].points||0;
+      var pts  = 0;
+      for (var j=0; j<ps.length; j++) pts += POINTS[ps[j].guesses] || 0;
       var sn   = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:'+(i<players.length-1?'1px solid #1a0028':'none')+';">'
         + '<div><div style="font-weight:700;font-size:14px;">'+name+'</div>'
