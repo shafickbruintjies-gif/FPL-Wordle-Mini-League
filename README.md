@@ -149,12 +149,31 @@ function getSortedData() {
       for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X' ? 11 : ps[i].guesses);
       avg = (s/ps.length).toFixed(1);
     }
-    return { name:name, pts:pts, played:ps.length, avg:avg, counts:counts, history:ps.slice().reverse() };
+    // Count green and yellow blocks from raw submissions
+    var greens = 0, yellows = 0;
+    for (var i=0; i<ps.length; i++) {
+      if (ps[i].raw) {
+        var lines = ps[i].raw.split('\n');
+        for (var l=0; l<lines.length; l++) {
+          var line = lines[l].trim();
+          if (/^[\u{1F7E9}\u{1F7E8}\u{1F7E5}\u{2B1C}]+$/u.test(line)) {
+            var chars = Array.from(line);
+            for (var c=0; c<chars.length; c++) {
+              if (chars[c] === '🟩') greens++;
+              else if (chars[c] === '🟨') yellows++;
+            }
+          }
+        }
+      }
+    }
+    return { name:name, pts:pts, played:ps.length, avg:avg, counts:counts, history:ps.slice().reverse(), greens:greens, yellows:yellows };
   }).sort(function(a,b) {
     if (b.pts !== a.pts) return b.pts - a.pts;
     for (var g=1; g<=10; g++) {
       if ((b.counts[g]||0) !== (a.counts[g]||0)) return (b.counts[g]||0) - (a.counts[g]||0);
     }
+    if (b.greens !== a.greens) return b.greens - a.greens;
+    if (b.yellows !== a.yellows) return b.yellows - a.yellows;
     return 0;
   });
 }
