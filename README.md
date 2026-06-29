@@ -201,6 +201,7 @@ window.submitScore = function() {
   var player = document.getElementById('player-select').value;
   var text   = document.getElementById('paste-area').value.trim();
   if (!players.length || !player) { showMsg('submit-msg','⚠ Add players in SQUAD first.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
+  if (!player) { showMsg('submit-msg','⚠ Please select a player.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
   if (!text) { showMsg('submit-msg','⚠ Paste your share text first.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
   var parsed = parseScore(text);
   if (!parsed) { showMsg('submit-msg',"⚠ Can't find a score like '7/10' in that text.",'#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
