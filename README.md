@@ -452,8 +452,8 @@ function renderShame() {
 function renderSelect() {
   var sel = document.getElementById('player-select');
   sel.innerHTML = players.length===0
-    ? '<option>Add players in SQUAD first</option>'
-    : players.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+    ? '<option value="">Add players in SQUAD first</option>'
+    : '<option value="">— Select player —</option>' + players.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
 }
 
 function renderSquad() {
