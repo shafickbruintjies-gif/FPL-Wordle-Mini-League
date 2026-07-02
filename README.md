@@ -364,6 +364,12 @@ function renderTable() {
         }
         if (!row.played) html += '<div style="font-family:monospace;font-size:12px;color:#4a2a5a;">No submissions yet.</div>';
         html += '</div>';
+        html += '<div style="display:flex;gap:8px;margin-bottom:12px;">'
+          + '<div style="background:rgba(0,255,133,0.08);border:1px solid rgba(0,255,133,0.3);border-radius:4px;padding:6px 10px;font-family:monospace;font-size:12px;">'
+          + '🟩 <span style="color:#00ff85;font-weight:900;">'+row.greens+'</span></div>'
+          + '<div style="background:rgba(244,208,63,0.08);border:1px solid rgba(244,208,63,0.3);border-radius:4px;padding:6px 10px;font-family:monospace;font-size:12px;">'
+          + '🟨 <span style="color:#f4d03f;font-weight:900;">'+row.yellows+'</span></div>'
+          + '</div>';
         if (row.history.length) {
           html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:6px;">SUBMISSION HISTORY</div>';
           for (var j=0; j<row.history.length; j++) {
