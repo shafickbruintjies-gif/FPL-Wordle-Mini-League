@@ -57,6 +57,9 @@
 <div id="view-fame" style="padding:16px;display:none;">
   <div style="font-size:10px;letter-spacing:3px;color:#ffd700;font-family:monospace;margin-bottom:12px;">HALL OF FAME — MINI LEAGUE TITLES</div>
   <div id="fame-body"></div>
+  <div style="margin-top:16px;padding:12px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:1.6;">
+    * Awarded a medal in the inaugural League of Champions mini league title
+  </div>
 </div>
 
 <!-- HALL OF SHAME -->
@@ -138,20 +141,11 @@ function getSortedData() {
     var counts = {};
     for (var i=1; i<=10; i++) counts[i] = 0;
     counts['X'] = 0;
+    var greens = 0, yellows = 0;
     for (var i=0; i<ps.length; i++) {
       var g = ps[i].guesses;
       pts += POINTS[g] !== undefined ? POINTS[g] : 0;
       if (counts[g] !== undefined) counts[g]++;
-    }
-    var avg = null;
-    if (ps.length) {
-      var s = 0;
-      for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X' ? 11 : ps[i].guesses);
-      avg = (s/ps.length).toFixed(1);
-    }
-    // Count green and yellow blocks from raw submissions
-    var greens = 0, yellows = 0;
-    for (var i=0; i<ps.length; i++) {
       if (ps[i].raw) {
         var lines = ps[i].raw.split('\n');
         for (var l=0; l<lines.length; l++) {
@@ -166,7 +160,13 @@ function getSortedData() {
         }
       }
     }
-    return { name:name, pts:pts, played:ps.length, avg:avg, counts:counts, history:ps.slice().reverse(), greens:greens, yellows:yellows };
+    var avg = null;
+    if (ps.length) {
+      var s = 0;
+      for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X' ? 11 : ps[i].guesses);
+      avg = (s/ps.length).toFixed(1);
+    }
+    return { name:name, pts:pts, played:ps.length, avg:avg, counts:counts, greens:greens, yellows:yellows, history:ps.slice().reverse() };
   }).sort(function(a,b) {
     if (b.pts !== a.pts) return b.pts - a.pts;
     for (var g=1; g<=10; g++) {
@@ -200,7 +200,7 @@ window.submitScore = function() {
   document.getElementById('submit-msg').style.display = 'none';
   var player = document.getElementById('player-select').value;
   var text   = document.getElementById('paste-area').value.trim();
-  if (!players.length || !player) { showMsg('submit-msg','⚠ Add players in SQUAD first.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
+  if (!players.length) { showMsg('submit-msg','⚠ Add players in SQUAD first.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
   if (!player) { showMsg('submit-msg','⚠ Please select a player.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
   if (!text) { showMsg('submit-msg','⚠ Paste your share text first.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
   var parsed = parseScore(text);
@@ -350,7 +350,7 @@ function renderTable() {
       if (isOpen) {
         html += '<div style="background:#0d001a;border-top:1px solid #2a0a3a;padding:10px 12px;">';
         html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:6px;">SCORE BREAKDOWN</div>';
-        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
         for (var g=1; g<=10; g++) {
           var cnt = row.counts[g]||0;
           if (cnt>0) {
@@ -391,13 +391,16 @@ function renderTable() {
 }
 
 function renderFame() {
-  var data = players.map(function(name) {
-    var m = medals[name] || { gold:0, silver:0, bronze:0 };
+  var allNames = players.slice();
+  Object.keys(medals).forEach(function(n) { if (allNames.indexOf(n) < 0) allNames.push(n); });
+  var data = allNames.map(function(name) {
+    var m = medals[name] || {};
     return { name:name, gold:m.gold||0, silver:m.silver||0, bronze:m.bronze||0 };
   }).sort(function(a,b) {
     if (b.gold   !== a.gold)   return b.gold   - a.gold;
     if (b.silver !== a.silver) return b.silver - a.silver;
-    return b.bronze - a.bronze;
+    if (b.bronze !== a.bronze) return b.bronze - a.bronze;
+    return a.name.replace(/[^a-zA-Z0-9]/g,'').localeCompare(b.name.replace(/[^a-zA-Z0-9]/g,''));
   });
 
   var html = '';
