@@ -73,7 +73,6 @@
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>3</div><div>Imo</div><div style="text-align:center;">6</div><div style="text-align:center;">36</div></div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>6</div><div>Garth</div><div style="text-align:center;">6</div><div style="text-align:center;">34</div></div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>7</div><div>Saadiq</div><div style="text-align:center;">5</div><div style="text-align:center;">26</div></div>
-    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"
   </div>
 </div>
 
