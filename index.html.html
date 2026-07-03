@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>FPL Wordle League</title>
+<title>League of Champions</title>
 </head>
 <body style="margin:0;padding:0;background:#0d0d1a;color:#e8e8f8;font-family:Georgia,serif;min-height:100vh;">
 
@@ -57,14 +57,24 @@
 <div id="view-fame" style="padding:16px;display:none;">
   <div style="font-size:10px;letter-spacing:3px;color:#ffd700;font-family:monospace;margin-bottom:12px;">HALL OF FAME — MINI LEAGUE TITLES</div>
   <div id="fame-body"></div>
-  <div style="margin-top:16px;padding:12px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:1.6;">
-    
-<div style="margin-top:16px;padding:14px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:2;">
-  <div style="color:#ffd700;letter-spacing:2px;margin-bottom:8px;">🏆 INAUGURAL LEAGUE OF CHAMPIONS PODIUM</div>
-  <div>🥇 Liam</div>
-  <div>🥈 Herbz</div>
-  <div>🥉 Junaid</div>
-</div>  </div>
+  <div style="margin-top:16px;padding:14px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:2;">
+    <div style="color:#ffd700;letter-spacing:2px;margin-bottom:8px;">🏆 INAUGURAL FPL WORDLE LEAGUE OF CHAMPIONS</div>
+    <div style="color:#a070b0;margin-bottom:10px;">The Fame title table includes results from the inaugural FPL Wordle League of Champions. Final standings:</div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;margin-bottom:6px;">
+      <div style="color:#5a3a6a;">POS</div>
+      <div style="color:#5a3a6a;">PLAYER</div>
+      <div style="color:#5a3a6a;text-align:center;">SUB</div>
+      <div style="color:#5a3a6a;text-align:center;">PTS</div>
+    </div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥇</div><div style="color:#ffd700;">Liam</div><div style="text-align:center;">6</div><div style="text-align:center;color:#ffd700;">46</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥈</div><div style="color:#c0c0c0;">Herbie</div><div style="text-align:center;">6</div><div style="text-align:center;color:#c0c0c0;">44</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥉</div><div style="color:#cd7f32;">Junaid</div><div style="text-align:center;">6</div><div style="text-align:center;color:#cd7f32;">36</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>3</div><div>Shafick</div><div style="text-align:center;">6</div><div style="text-align:center;">36</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>3</div><div>Imo</div><div style="text-align:center;">6</div><div style="text-align:center;">36</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>6</div><div>Garth</div><div style="text-align:center;">6</div><div style="text-align:center;">34</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>7</div><div>Saadiq</div><div style="text-align:center;">5</div><div style="text-align:center;">26</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>8</div><div>Herbz</div><div style="text-align:center;">—</div><div style="text-align:center;">—</div></div>
+  </div>
 </div>
 
 <!-- HALL OF SHAME -->
@@ -400,7 +410,10 @@ function renderFame() {
   Object.keys(medals).forEach(function(n) { if (allNames.indexOf(n) < 0) allNames.push(n); });
   var data = allNames.map(function(name) {
     var m = medals[name] || {};
-    return { name:name, gold:m.gold||0, silver:m.silver||0, bronze:m.bronze||0 };
+    var g = typeof m.gold   === 'number' ? m.gold   : 0;
+    var s = typeof m.silver === 'number' ? m.silver : 0;
+    var b = typeof m.bronze === 'number' ? m.bronze : 0;
+    return { name:name, gold:g, silver:s, bronze:b };
   }).sort(function(a,b) {
     if (b.gold   !== a.gold)   return b.gold   - a.gold;
     if (b.silver !== a.silver) return b.silver - a.silver;
