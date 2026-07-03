@@ -58,7 +58,12 @@
   <div style="font-size:10px;letter-spacing:3px;color:#ffd700;font-family:monospace;margin-bottom:12px;">HALL OF FAME — MINI LEAGUE TITLES</div>
   <div id="fame-body"></div>
   <div style="margin-top:16px;padding:12px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:1.6;">
-    * Awarded a medal in the inaugural League of Champions mini league title
+    <div style="margin-top:16px;padding:14px;background:rgba(56,0,60,0.4);border-radius:6px;font-family:monospace;font-size:11px;color:#8060a0;line-height:2;">
+  <div style="color:#ffd700;letter-spacing:2px;margin-bottom:8px;">🏆 INAUGURAL LEAGUE OF CHAMPIONS</div>
+  <div>🥇 Liam</div>
+  <div>🥈 Herbz</div>
+  <div>🥉 Junaid</div>
+</div>
   </div>
 </div>
 
