@@ -67,7 +67,7 @@
       <div style="color:#5a3a6a;text-align:center;">PTS</div>
     </div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥇</div><div style="color:#ffd700;">Liam</div><div style="text-align:center;">6</div><div style="text-align:center;color:#ffd700;">46</div></div>
-    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥈</div><div style="color:#c0c0c0;">Herbie</div><div style="text-align:center;">6</div><div style="text-align:center;color:#c0c0c0;">44</div></div>
+    <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥈</div><div style="color:#c0c0c0;">Herbz</div><div style="text-align:center;">6</div><div style="text-align:center;color:#c0c0c0;">44</div></div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥉</div><div style="color:#cd7f32;">Junaid</div><div style="text-align:center;">6</div><div style="text-align:center;color:#cd7f32;">36</div></div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>3</div><div>Shafick</div><div style="text-align:center;">6</div><div style="text-align:center;">36</div></div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>3</div><div>Imo</div><div style="text-align:center;">6</div><div style="text-align:center;">36</div></div>
@@ -348,53 +348,34 @@ function renderTable() {
       var ptsCol = i===0?'#00ff85':i===1?'#c0c0c0':i===2?'#cd7f32':'#e8e8f8';
       var sn     = row.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       var isOpen = expanded[row.name];
-
       html += '<div style="background:'+bg+';border:'+border+';border-radius:'+(isOpen?'6px 6px 0 0':'6px')+';margin-bottom:'+(isOpen?'0':'4px')+';overflow:hidden;">';
       html += '<div style="display:grid;grid-template-columns:30px 1fr 36px 36px 36px 44px;gap:3px;align-items:center;padding:12px 8px;cursor:pointer;" onclick="toggleHistory(\''+sn+'\')">';
       html += '<div style="font-size:'+(i<3?'17':'12')+'px;text-align:center;">'+medal+'</div>';
-      html += '<div style="padding-left:2px;">'
-        + '<div style="font-weight:700;font-size:14px;color:'+(i===0?'#fff':'#d0c0e0')+';">'+row.name+' <span style="font-size:10px;color:#5a3a6a;">'+(isOpen?'▲':'▼')+'</span></div>'
-        + '<div style="font-size:10px;color:#5a3a6a;font-family:monospace;margin-top:1px;">tap for history</div>'
-        + '</div>';
+      html += '<div style="padding-left:2px;"><div style="font-weight:700;font-size:14px;color:'+(i===0?'#fff':'#d0c0e0')+';">'+row.name+' <span style="font-size:10px;color:#5a3a6a;">'+(isOpen?'▲':'▼')+'</span></div><div style="font-size:10px;color:#5a3a6a;font-family:monospace;margin-top:1px;">tap for history</div></div>';
       html += '<div style="text-align:center;font-family:monospace;font-size:12px;font-weight:700;color:#a070c0;">'+row.played+'</div>';
       html += '<div style="text-align:center;font-family:monospace;font-size:13px;font-weight:900;color:#ffd700;">'+(row.counts[1]||0)+'</div>';
       html += '<div style="text-align:center;font-family:monospace;font-size:13px;font-weight:900;color:#c0c0c0;">'+(row.counts[2]||0)+'</div>';
       html += '<div style="text-align:center;font-family:monospace;font-size:17px;font-weight:900;color:'+ptsCol+';">'+row.pts+'</div>';
       html += '</div>';
-
       if (isOpen) {
         html += '<div style="background:#0d001a;border-top:1px solid #2a0a3a;padding:10px 12px;">';
         html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:6px;">SCORE BREAKDOWN</div>';
         html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
         for (var g=1; g<=10; g++) {
           var cnt = row.counts[g]||0;
-          if (cnt>0) {
-            html += '<div style="background:rgba(56,0,60,0.6);border:1px solid #3a1a4a;border-radius:4px;padding:4px 8px;font-family:monospace;font-size:11px;">'
-              + '<span style="color:#00ff85;">'+g+'/10</span> <span style="color:#f4d03f;">×'+cnt+'</span></div>';
-          }
+          if (cnt>0) html += '<div style="background:rgba(56,0,60,0.6);border:1px solid #3a1a4a;border-radius:4px;padding:4px 8px;font-family:monospace;font-size:11px;"><span style="color:#00ff85;">'+g+'/10</span> <span style="color:#f4d03f;">×'+cnt+'</span></div>';
         }
-        if ((row.counts['X']||0)>0) {
-          html += '<div style="background:rgba(56,0,60,0.6);border:1px solid #3a1a4a;border-radius:4px;padding:4px 8px;font-family:monospace;font-size:11px;">'
-            + '<span style="color:#e63946;">X/10</span> <span style="color:#f4d03f;">×'+row.counts['X']+'</span></div>';
-        }
+        if ((row.counts['X']||0)>0) html += '<div style="background:rgba(56,0,60,0.6);border:1px solid #3a1a4a;border-radius:4px;padding:4px 8px;font-family:monospace;font-size:11px;"><span style="color:#e63946;">X/10</span> <span style="color:#f4d03f;">×'+row.counts['X']+'</span></div>';
         if (!row.played) html += '<div style="font-family:monospace;font-size:12px;color:#4a2a5a;">No submissions yet.</div>';
         html += '</div>';
-        html += '<div style="display:flex;gap:8px;margin-bottom:12px;">'
-          + '<div style="background:rgba(0,255,133,0.08);border:1px solid rgba(0,255,133,0.3);border-radius:4px;padding:6px 10px;font-family:monospace;font-size:12px;">'
-          + '🟩 <span style="color:#00ff85;font-weight:900;">'+row.greens+'</span></div>'
-          + '<div style="background:rgba(244,208,63,0.08);border:1px solid rgba(244,208,63,0.3);border-radius:4px;padding:6px 10px;font-family:monospace;font-size:12px;">'
-          + '🟨 <span style="color:#f4d03f;font-weight:900;">'+row.yellows+'</span></div>'
-          + '</div>';
+        html += '<div style="display:flex;gap:8px;margin-bottom:12px;"><div style="background:rgba(0,255,133,0.08);border:1px solid rgba(0,255,133,0.3);border-radius:4px;padding:6px 10px;font-family:monospace;font-size:12px;">🟩 <span style="color:#00ff85;font-weight:900;">'+row.greens+'</span></div><div style="background:rgba(244,208,63,0.08);border:1px solid rgba(244,208,63,0.3);border-radius:4px;padding:6px 10px;font-family:monospace;font-size:12px;">🟨 <span style="color:#f4d03f;font-weight:900;">'+row.yellows+'</span></div></div>';
         if (row.history.length) {
           html += '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;margin-bottom:6px;">SUBMISSION HISTORY</div>';
           for (var j=0; j<row.history.length; j++) {
             var e  = row.history[j];
             var sc = e.guesses==='X'?'#e63946':e.guesses<=4?'#00ff85':e.guesses<=7?'#f4d03f':'#e67e22';
             var dt = e.puzzle || formatDate(e.at);
-            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1a0028;">'
-              + '<div style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+dt+'</div>'
-              + '<div style="font-family:monospace;font-size:12px;"><span style="color:'+sc+';font-weight:700;">'+e.guesses+'/10</span>'
-              + ' <span style="color:#f4d03f;margin-left:8px;">+'+POINTS[e.guesses]+'pts</span></div></div>';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1a0028;"><div style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+dt+'</div><div style="font-family:monospace;font-size:12px;"><span style="color:'+sc+';font-weight:700;">'+e.guesses+'/10</span> <span style="color:#f4d03f;margin-left:8px;">+'+POINTS[e.guesses]+'pts</span></div></div>';
           }
         }
         html += '</div>';
@@ -410,41 +391,24 @@ function renderFame() {
   Object.keys(medals).forEach(function(n) { if (allNames.indexOf(n) < 0) allNames.push(n); });
   var data = allNames.map(function(name) {
     var m = medals[name] || {};
-    var g = typeof m.gold   === 'number' ? m.gold   : 0;
-    var s = typeof m.silver === 'number' ? m.silver : 0;
-    var b = typeof m.bronze === 'number' ? m.bronze : 0;
-    return { name:name, gold:g, silver:s, bronze:b };
+    return { name:name, gold:typeof m.gold==='number'?m.gold:0, silver:typeof m.silver==='number'?m.silver:0, bronze:typeof m.bronze==='number'?m.bronze:0 };
   }).sort(function(a,b) {
     if (b.gold   !== a.gold)   return b.gold   - a.gold;
     if (b.silver !== a.silver) return b.silver - a.silver;
     if (b.bronze !== a.bronze) return b.bronze - a.bronze;
     return a.name.replace(/[^a-zA-Z0-9]/g,'').localeCompare(b.name.replace(/[^a-zA-Z0-9]/g,''));
   });
-
   var html = '';
   if (!data.length || data.every(function(d){ return d.gold+d.silver+d.bronze===0; })) {
     html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No titles yet — end a mini league to populate this!</div>';
   } else {
-    html += '<div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;padding:6px 10px;margin-bottom:4px;">'
-      + '<div></div>'
-      + '<div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;">PLAYER</div>'
-      + '<div style="font-size:16px;text-align:center;">🥇</div>'
-      + '<div style="font-size:16px;text-align:center;">🥈</div>'
-      + '<div style="font-size:16px;text-align:center;">🥉</div>'
-      + '</div>';
+    html += '<div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;padding:6px 10px;margin-bottom:4px;"><div></div><div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;">PLAYER</div><div style="font-size:16px;text-align:center;">🥇</div><div style="font-size:16px;text-align:center;">🥈</div><div style="font-size:16px;text-align:center;">🥉</div></div>';
     for (var i=0; i<data.length; i++) {
       var row   = data[i];
-      var total = row.gold + row.silver + row.bronze;
-      var bg     = i===0&&total>0 ? 'rgba(255,215,0,0.07)' : 'rgba(56,0,60,0.3)';
-      var border = i===0&&total>0 ? '1px solid rgba(255,215,0,0.3)' : '1px solid #1a0028';
-      html += '<div style="background:'+bg+';border:'+border+';border-radius:6px;margin-bottom:4px;">'
-        + '<div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;align-items:center;padding:12px 10px;">'
-        + '<div style="font-size:'+(i===0&&total>0?'17':'12')+'px;text-align:center;">'+(i===0&&total>0?'👑':(i+1))+'</div>'
-        + '<div style="font-weight:700;font-size:14px;color:'+(i===0&&total>0?'#ffd700':'#d0c0e0')+';">'+row.name+'</div>'
-        + '<div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#ffd700;">'+row.gold+'</div>'
-        + '<div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#c0c0c0;">'+row.silver+'</div>'
-        + '<div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#cd7f32;">'+row.bronze+'</div>'
-        + '</div></div>';
+      var total = row.gold+row.silver+row.bronze;
+      var bg     = i===0&&total>0?'rgba(255,215,0,0.07)':'rgba(56,0,60,0.3)';
+      var border = i===0&&total>0?'1px solid rgba(255,215,0,0.3)':'1px solid #1a0028';
+      html += '<div style="background:'+bg+';border:'+border+';border-radius:6px;margin-bottom:4px;"><div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;align-items:center;padding:12px 10px;"><div style="font-size:'+(i===0&&total>0?'17':'12')+'px;text-align:center;">'+(i===0&&total>0?'👑':(i+1))+'</div><div style="font-weight:700;font-size:14px;color:'+(i===0&&total>0?'#ffd700':'#d0c0e0')+';">'+row.name+'</div><div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#ffd700;">'+row.gold+'</div><div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#c0c0c0;">'+row.silver+'</div><div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#cd7f32;">'+row.bronze+'</div></div></div>';
     }
   }
   document.getElementById('fame-body').innerHTML = html;
@@ -452,26 +416,16 @@ function renderFame() {
 
 function renderShame() {
   var data = players.map(function(name) {
-    return { name:name, titles: shame[name] || 0 };
-  }).sort(function(a,b) { return b.titles - a.titles; });
-
+    return { name:name, titles:shame[name]||0 };
+  }).sort(function(a,b){ return b.titles-a.titles; });
   var html = '';
   if (!data.length || data.every(function(d){ return d.titles===0; })) {
     html = '<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No shame titles yet — end a mini league to populate this!</div>';
   } else {
     for (var i=0; i<data.length; i++) {
       var row  = data[i];
-      var top  = i===0 && row.titles>0;
-      var bg     = top ? 'rgba(230,57,70,0.08)' : 'rgba(56,0,60,0.3)';
-      var border = top ? '1px solid rgba(230,57,70,0.3)' : '1px solid #1a0028';
-      html += '<div style="background:'+bg+';border:'+border+';border-radius:6px;margin-bottom:4px;">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px;">'
-        + '<div style="display:flex;align-items:center;gap:12px;">'
-        + '<div style="font-size:'+(top?'20':'13')+'px;">'+(top?'💀':(i+1))+'</div>'
-        + '<div style="font-weight:700;font-size:14px;color:'+(top?'#e63946':'#d0c0e0')+';">'+row.name+'</div>'
-        + '</div>'
-        + '<div style="font-family:monospace;font-size:20px;font-weight:900;color:#e63946;">'+row.titles+' <span style="font-size:12px;color:#6a2a3a;">title'+(row.titles!==1?'s':'')+'</span></div>'
-        + '</div></div>';
+      var top  = i===0&&row.titles>0;
+      html += '<div style="background:'+(top?'rgba(230,57,70,0.08)':'rgba(56,0,60,0.3)')+';border:'+(top?'1px solid rgba(230,57,70,0.3)':'1px solid #1a0028')+';border-radius:6px;margin-bottom:4px;"><div style="display:flex;align-items:center;justify-content:space-between;padding:14px;"><div style="display:flex;align-items:center;gap:12px;"><div style="font-size:'+(top?'20':'13')+'px;">'+(top?'💀':(i+1))+'</div><div style="font-weight:700;font-size:14px;color:'+(top?'#e63946':'#d0c0e0')+';">'+row.name+'</div></div><div style="font-family:monospace;font-size:20px;font-weight:900;color:#e63946;">'+row.titles+' <span style="font-size:12px;color:#6a2a3a;">title'+(row.titles!==1?'s':'')+'</span></div></div></div>';
     }
   }
   document.getElementById('shame-body').innerHTML = html;
@@ -481,7 +435,7 @@ function renderSelect() {
   var sel = document.getElementById('player-select');
   sel.innerHTML = players.length===0
     ? '<option value="">Add players in SQUAD first</option>'
-    : '<option value="">— Select player —</option>' + players.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+    : '<option value="">— Select player —</option>'+players.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
 }
 
 function renderSquad() {
@@ -493,13 +447,9 @@ function renderSquad() {
       var name = players[i];
       var ps   = scores[name]||[];
       var pts  = 0;
-      for (var j=0; j<ps.length; j++) pts += POINTS[ps[j].guesses] || 0;
+      for (var j=0; j<ps.length; j++) pts += POINTS[ps[j].guesses]||0;
       var sn   = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:'+(i<players.length-1?'1px solid #1a0028':'none')+';">'
-        + '<div><div style="font-weight:700;font-size:14px;">'+name+'</div>'
-        + '<div style="font-size:11px;color:#5a3a6a;font-family:monospace;">'+ps.length+' sub'+(ps.length!==1?'s':'')+' · '+pts+' pts</div></div>'
-        + '<button onclick="removePlayer(\''+sn+'\')" style="padding:5px 12px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">RELEASE</button>'
-        + '</div>';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:'+(i<players.length-1?'1px solid #1a0028':'none')+';"><div><div style="font-weight:700;font-size:14px;">'+name+'</div><div style="font-size:11px;color:#5a3a6a;font-family:monospace;">'+ps.length+' sub'+(ps.length!==1?'s':'')+' · '+pts+' pts</div></div><button onclick="removePlayer(\''+sn+'\')" style="padding:5px 12px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">RELEASE</button></div>';
     }
   }
   document.getElementById('squad-list').innerHTML = html;
@@ -508,8 +458,7 @@ function renderSquad() {
 function formatDate(ts) {
   if (!ts) return 'Unknown date';
   var d = new Date(ts);
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return months[d.getMonth()] + ' ' + d.getDate();
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();
 }
 
 function showMsg(id, text, bg, color, border) {
