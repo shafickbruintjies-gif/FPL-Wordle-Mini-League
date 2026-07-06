@@ -41,16 +41,39 @@
 
 <!-- SUBMIT -->
 <div id="view-submit" style="padding:16px;display:none;">
-  <div style="margin-bottom:14px;">
-    <div style="font-size:10px;letter-spacing:3px;color:#00ff85;font-family:monospace;margin-bottom:8px;">PLAYER</div>
-    <select id="player-select" style="width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:15px;font-family:Georgia,serif;"></select>
+
+  <!-- Score submission -->
+  <div style="font-size:10px;letter-spacing:3px;color:#00ff85;font-family:monospace;margin-bottom:12px;">⚽ SUBMIT SCORE</div>
+  <div style="background:rgba(56,0,60,0.3);border:1px solid #2a0a3a;border-radius:8px;padding:14px;margin-bottom:20px;">
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;letter-spacing:2px;color:#a070b0;font-family:monospace;margin-bottom:6px;">PLAYER</div>
+      <select id="player-select" style="width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:15px;font-family:Georgia,serif;"></select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;letter-spacing:2px;color:#a070b0;font-family:monospace;margin-bottom:6px;">PASTE SHARE TEXT</div>
+      <textarea id="paste-area" rows="6" style="width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:13px;font-family:monospace;resize:vertical;line-height:1.7;" placeholder="One Two FPL Wordle May 21&#10;7/10&#10;&#10;🟥🟩🟥..."></textarea>
+    </div>
+    <div id="submit-msg" style="display:none;padding:10px;border-radius:6px;font-family:monospace;font-size:13px;margin-bottom:10px;"></div>
+    <button onclick="submitScore()" style="width:100%;padding:14px;background:#00ff85;color:#38003c;border:none;border-radius:6px;font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px;cursor:pointer;">⚽ SUBMIT SCORE</button>
   </div>
-  <div style="margin-bottom:14px;">
-    <div style="font-size:10px;letter-spacing:3px;color:#00ff85;font-family:monospace;margin-bottom:8px;">PASTE SHARE TEXT</div>
-    <textarea id="paste-area" rows="7" style="width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:13px;font-family:monospace;resize:vertical;line-height:1.7;" placeholder="One Two FPL Wordle May 21&#10;7/10&#10;&#10;🟥🟩🟥..."></textarea>
+
+  <!-- Daily wordle answer -->
+  <div style="font-size:10px;letter-spacing:3px;color:#f4d03f;font-family:monospace;margin-bottom:12px;">🟩 TODAY'S WORDLE ANSWER</div>
+  <div style="background:rgba(56,0,60,0.3);border:1px solid #2a0a3a;border-radius:8px;padding:14px;margin-bottom:20px;">
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;letter-spacing:2px;color:#a070b0;font-family:monospace;margin-bottom:6px;">PUZZLE DATE</div>
+      <input id="answer-date" type="text" placeholder="e.g. Jun 27" style="width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:15px;font-family:Georgia,serif;outline:none;"/>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:10px;letter-spacing:2px;color:#a070b0;font-family:monospace;margin-bottom:6px;">FPL PLAYER NAME</div>
+      <input id="answer-name" type="text" placeholder="e.g. Erling Haaland" style="width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:15px;font-family:Georgia,serif;outline:none;"/>
+    </div>
+    <div id="answer-msg" style="display:none;padding:10px;border-radius:6px;font-family:monospace;font-size:13px;margin-bottom:10px;"></div>
+    <button onclick="submitAnswer()" style="width:100%;padding:14px;background:#f4d03f;color:#1a0a00;border:none;border-radius:6px;font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px;cursor:pointer;">🟩 SAVE ANSWER</button>
+
+    <!-- Recent answers -->
+    <div id="answers-list" style="margin-top:14px;"></div>
   </div>
-  <div id="submit-msg" style="display:none;padding:12px;border-radius:6px;font-family:monospace;font-size:13px;margin-bottom:14px;"></div>
-  <button onclick="submitScore()" style="width:100%;padding:15px;background:#00ff85;color:#38003c;border:none;border-radius:6px;font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px;cursor:pointer;">⚽ SUBMIT SCORE</button>
 </div>
 
 <!-- HALL OF FAME -->
@@ -61,10 +84,7 @@
     <div style="color:#ffd700;letter-spacing:2px;margin-bottom:8px;">🏆 INAUGURAL FPL WORDLE LEAGUE OF CHAMPIONS</div>
     <div style="color:#a070b0;margin-bottom:10px;">The Fame title table includes results from the inaugural FPL Wordle League of Champions. Final standings:</div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;margin-bottom:6px;">
-      <div style="color:#5a3a6a;">POS</div>
-      <div style="color:#5a3a6a;">PLAYER</div>
-      <div style="color:#5a3a6a;text-align:center;">SUB</div>
-      <div style="color:#5a3a6a;text-align:center;">PTS</div>
+      <div style="color:#5a3a6a;">POS</div><div style="color:#5a3a6a;">PLAYER</div><div style="color:#5a3a6a;text-align:center;">SUB</div><div style="color:#5a3a6a;text-align:center;">PTS</div>
     </div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥇</div><div style="color:#ffd700;">Liam</div><div style="text-align:center;">6</div><div style="text-align:center;color:#ffd700;">46</div></div>
     <div style="display:grid;grid-template-columns:30px 1fr 50px 50px;gap:4px;padding:4px 0;border-top:1px solid #2a0a3a;"><div>🥈</div><div style="color:#c0c0c0;">Herbz</div><div style="text-align:center;">6</div><div style="text-align:center;color:#c0c0c0;">44</div></div>
@@ -121,6 +141,7 @@ var players  = [];
 var scores   = {};
 var medals   = {};
 var shame    = {};
+var answers  = {}; // { "Jun 27": "Erling Haaland" }
 var expanded = {};
 var POINTS   = {1:25,2:18,3:15,4:12,5:10,6:8,7:6,8:4,9:2,10:1,'X':0};
 var ready    = false;
@@ -131,6 +152,7 @@ onValue(ref(db, 'league'), function(snapshot) {
   scores  = data.scores  || {};
   medals  = data.medals  || {};
   shame   = data.shame   || {};
+  answers = data.answers || {};
   if (!ready) {
     ready = true;
     document.getElementById('loading').style.display = 'none';
@@ -141,11 +163,12 @@ onValue(ref(db, 'league'), function(snapshot) {
     renderSquad();
     renderFame();
     renderShame();
+    renderAnswersList();
   }
 });
 
 function save() {
-  set(ref(db, 'league'), { players:players, scores:scores, medals:medals, shame:shame });
+  set(ref(db, 'league'), { players:players, scores:scores, medals:medals, shame:shame, answers:answers });
 }
 
 function getSortedData() {
@@ -197,7 +220,7 @@ window.show = function(v) {
     document.getElementById('btn-'+s).style.color = v===s?'#38003c':'#7a4a8a';
   });
   if (v==='table')  renderTable();
-  if (v==='submit') renderSelect();
+  if (v==='submit') { renderSelect(); renderAnswersList(); }
   if (v==='fame')   renderFame();
   if (v==='shame')  renderShame();
   if (v==='manage') renderSquad();
@@ -227,6 +250,26 @@ window.submitScore = function() {
   showMsg('submit-msg', emoji+' Saved! '+parsed.guesses+'/10 → '+parsed.points+' pts'+(parsed.puzzle?' ('+parsed.puzzle+')':''), 'rgba(0,255,133,0.06)','#00ff85','1px solid rgba(0,255,133,0.4)');
 };
 
+window.submitAnswer = function() {
+  document.getElementById('answer-msg').style.display = 'none';
+  var date   = document.getElementById('answer-date').value.trim();
+  var name   = document.getElementById('answer-name').value.trim();
+  if (!date) { showMsg('answer-msg','⚠ Enter the puzzle date.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
+  if (!name) { showMsg('answer-msg','⚠ Enter the FPL player name.','#1a0010','#ff6b6b','1px solid #6a1a2a'); return; }
+  answers[date] = name;
+  save();
+  document.getElementById('answer-date').value = '';
+  document.getElementById('answer-name').value = '';
+  showMsg('answer-msg','✅ Saved! '+date+' → '+name,'rgba(0,255,133,0.06)','#00ff85','1px solid rgba(0,255,133,0.4)');
+  renderAnswersList();
+};
+
+window.deleteAnswer = function(date) {
+  delete answers[date];
+  save();
+  renderAnswersList();
+};
+
 window.addPlayer = function() {
   var input = document.getElementById('new-name');
   var name  = input.value.trim();
@@ -245,6 +288,20 @@ window.removePlayer = function(name) {
 
 window.exportData = function() {
   var out = '=== MINI LEAGUE EXPORT ===\nGenerated: '+new Date().toDateString()+'\n\n';
+
+  // Daily answers section
+  var answerKeys = Object.keys(answers);
+  if (answerKeys.length) {
+    out += '══════════════════════════\n';
+    out += 'DAILY WORDLE ANSWERS\n';
+    out += '══════════════════════════\n';
+    answerKeys.forEach(function(date) {
+      out += date+' → '+answers[date]+'\n';
+    });
+    out += '\n';
+  }
+
+  // Player scores
   var hasData = false;
   players.forEach(function(name) {
     var ps = scores[name]||[];
@@ -252,7 +309,10 @@ window.exportData = function() {
     hasData = true;
     out += '──────────────────────────\nPlayer: '+name+'\n──────────────────────────\n';
     ps.forEach(function(e) {
-      out += (e.puzzle||formatDate(e.at))+' | '+e.guesses+'/10\n';
+      var date = e.puzzle||formatDate(e.at);
+      out += date+' | '+e.guesses+'/10';
+      if (answers[date]) out += ' | Answer: '+answers[date];
+      out += '\n';
       if (e.raw) {
         e.raw.split('\n').forEach(function(line) {
           var t=line.trim();
@@ -262,7 +322,7 @@ window.exportData = function() {
       out+='\n';
     });
   });
-  if (!hasData) { alert('No submissions to export yet!'); return; }
+  if (!hasData && !answerKeys.length) { alert('No data to export yet!'); return; }
   var area=document.getElementById('export-area');
   area.value=out; area.style.display='block'; area.select();
   try { navigator.clipboard.writeText(out).then(function(){ document.getElementById('export-msg').style.display='block'; setTimeout(function(){ document.getElementById('export-msg').style.display='none'; },4000); }); } catch(e){}
@@ -295,6 +355,22 @@ function parseScore(text) {
   var g=raw==='X'?'X':parseInt(raw);
   var pm=text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2}/i);
   return { guesses:g, puzzle:pm?pm[0]:null, points:POINTS[g]!==undefined?POINTS[g]:0 };
+}
+
+function renderAnswersList() {
+  var keys = Object.keys(answers);
+  var el = document.getElementById('answers-list');
+  if (!el) return;
+  if (!keys.length) { el.innerHTML='<div style="font-family:monospace;font-size:11px;color:#4a2a5a;padding-top:8px;">No answers saved yet.</div>'; return; }
+  var html = '<div style="font-size:9px;letter-spacing:2px;color:#f4d03f;font-family:monospace;margin-bottom:8px;margin-top:4px;">SAVED ANSWERS</div>';
+  keys.forEach(function(date) {
+    var sd = date.replace(/'/g,"\\'");
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a0028;">'
+      + '<div style="font-family:monospace;font-size:12px;"><span style="color:#a070b0;">'+date+'</span> → <span style="color:#f4d03f;font-weight:700;">'+answers[date]+'</span></div>'
+      + '<button onclick="deleteAnswer(\''+sd+'\')" style="padding:3px 8px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">✕</button>'
+      + '</div>';
+  });
+  el.innerHTML = html;
 }
 
 function renderTable() {
@@ -331,7 +407,9 @@ function renderTable() {
           for (var j=0;j<row.history.length;j++) {
             var e=row.history[j];
             var sc=e.guesses==='X'?'#e63946':e.guesses<=4?'#00ff85':e.guesses<=7?'#f4d03f':'#e67e22';
-            html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1a0028;"><div style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+(e.puzzle||formatDate(e.at))+'</div><div style="font-family:monospace;font-size:12px;"><span style="color:'+sc+';font-weight:700;">'+e.guesses+'/10</span> <span style="color:#f4d03f;margin-left:8px;">+'+POINTS[e.guesses]+'pts</span></div></div>';
+            var dt=e.puzzle||formatDate(e.at);
+            var ans=answers[dt]?'<span style="color:#f4d03f;margin-left:8px;">'+answers[dt]+'</span>':'';
+            html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1a0028;"><div style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+dt+ans+'</div><div style="font-family:monospace;font-size:12px;"><span style="color:'+sc+';font-weight:700;">'+e.guesses+'/10</span> <span style="color:#f4d03f;margin-left:8px;">+'+POINTS[e.guesses]+'pts</span></div></div>';
           }
         }
         html+='</div>';
