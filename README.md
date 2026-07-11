@@ -41,8 +41,6 @@
 
 <!-- SUBMIT -->
 <div id="view-submit" style="padding:16px;display:none;">
-
-  <!-- Score submission -->
   <div style="font-size:10px;letter-spacing:3px;color:#00ff85;font-family:monospace;margin-bottom:12px;">⚽ SUBMIT SCORE</div>
   <div style="background:rgba(56,0,60,0.3);border:1px solid #2a0a3a;border-radius:8px;padding:14px;margin-bottom:20px;">
     <div style="margin-bottom:12px;">
@@ -57,7 +55,6 @@
     <button onclick="submitScore()" style="width:100%;padding:14px;background:#00ff85;color:#38003c;border:none;border-radius:6px;font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px;cursor:pointer;">⚽ SUBMIT SCORE</button>
   </div>
 
-  <!-- Daily wordle answer -->
   <div style="font-size:10px;letter-spacing:3px;color:#f4d03f;font-family:monospace;margin-bottom:12px;">🟩 TODAY'S WORDLE ANSWER</div>
   <div style="background:rgba(56,0,60,0.3);border:1px solid #2a0a3a;border-radius:8px;padding:14px;margin-bottom:20px;">
     <div style="font-size:11px;color:#5a3a6a;font-family:monospace;margin-bottom:12px;">Player names are hidden — only dates are shown.</div>
@@ -71,8 +68,6 @@
     </div>
     <div id="answer-msg" style="display:none;padding:10px;border-radius:6px;font-family:monospace;font-size:13px;margin-bottom:10px;"></div>
     <button onclick="submitAnswer()" style="width:100%;padding:14px;background:#f4d03f;color:#1a0a00;border:none;border-radius:6px;font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px;cursor:pointer;">🟩 SAVE ANSWER</button>
-
-    <!-- Dates only list -->
     <div id="answers-list" style="margin-top:14px;"></div>
   </div>
 </div>
@@ -141,7 +136,7 @@ const db  = getDatabase(app);
 var players  = [];
 var scores   = {};
 var medals   = {};
-var shame    = {};
+var shame    = {}; // { playerName: { gold:0, silver:0, bronze:0 } }
 var answers  = {};
 var expanded = {};
 var POINTS   = {1:25,2:18,3:15,4:12,5:10,6:8,7:6,8:4,9:2,10:1,'X':0};
@@ -214,6 +209,44 @@ function getSortedData() {
   });
 }
 
+// Sort players by shame (most X/10s first, tiebreak: most 10/10s, 9/10s... least greens, least yellows)
+function getShameSortedData() {
+  return players.map(function(name) {
+    var ps = scores[name] || [];
+    var counts = {}, greens = 0, yellows = 0;
+    for (var i=1; i<=10; i++) counts[i] = 0;
+    counts['X'] = 0;
+    for (var i=0; i<ps.length; i++) {
+      var g = ps[i].guesses;
+      if (counts[g] !== undefined) counts[g]++;
+      if (ps[i].raw) {
+        var lines = ps[i].raw.split('\n');
+        for (var l=0; l<lines.length; l++) {
+          var line = lines[l].trim();
+          if (/^[\u{1F7E9}\u{1F7E8}\u{1F7E5}\u{2B1C}]+$/u.test(line)) {
+            Array.from(line).forEach(function(c) {
+              if (c==='🟩') greens++;
+              else if (c==='🟨') yellows++;
+            });
+          }
+        }
+      }
+    }
+    return { name:name, xs:counts['X']||0, counts:counts, greens:greens, yellows:yellows };
+  }).sort(function(a,b) {
+    // Most X/10s first
+    if (b.xs !== a.xs) return b.xs - a.xs;
+    // Tiebreak: most 10/10s, then 9/10s... down to 1/10s
+    for (var g=10; g>=1; g--) {
+      if ((b.counts[g]||0) !== (a.counts[g]||0)) return (b.counts[g]||0)-(a.counts[g]||0);
+    }
+    // Least greens
+    if (a.greens !== b.greens) return a.greens - b.greens;
+    // Least yellows
+    return a.yellows - b.yellows;
+  });
+}
+
 window.show = function(v) {
   ['table','submit','fame','shame','manage'].forEach(function(s) {
     document.getElementById('view-'+s).style.display = v===s?'block':'none';
@@ -266,9 +299,7 @@ window.submitAnswer = function() {
 };
 
 window.deleteAnswer = function(date) {
-  delete answers[date];
-  save();
-  renderAnswersList();
+  delete answers[date]; save(); renderAnswersList();
 };
 
 window.addPlayer = function() {
@@ -291,9 +322,7 @@ window.exportData = function() {
   var out = '=== MINI LEAGUE EXPORT ===\nGenerated: '+new Date().toDateString()+'\n\n';
   var answerKeys = Object.keys(answers);
   if (answerKeys.length) {
-    out += '══════════════════════════\n';
-    out += 'DAILY WORDLE ANSWERS\n';
-    out += '══════════════════════════\n';
+    out += '══════════════════════════\nDAILY WORDLE ANSWERS\n══════════════════════════\n';
     answerKeys.forEach(function(date) { out += date+' → '+answers[date]+'\n'; });
     out += '\n';
   }
@@ -324,7 +353,9 @@ window.exportData = function() {
 };
 
 window.resetAll = function() {
-  if (!confirm('End this mini league and reset scores? Winners will be saved to the Hall of Fame.')) return;
+  if (!confirm('End this mini league and reset scores? Winners will be saved to Hall of Fame and Hall of Shame.')) return;
+
+  // Hall of Fame — top 3 by points
   var sorted = getSortedData();
   var podium = ['gold','silver','bronze'];
   for (var i=0; i<Math.min(3,sorted.length); i++) {
@@ -332,13 +363,16 @@ window.resetAll = function() {
     if (!medals[name]) medals[name]={gold:0,silver:0,bronze:0};
     medals[name][podium[i]]=(medals[name][podium[i]]||0)+1;
   }
-  var xCounts = players.map(function(name) {
-    var ps=scores[name]||[], xs=0;
-    for (var i=0;i<ps.length;i++) if(ps[i].guesses==='X') xs++;
-    return {name:name,xs:xs};
-  });
-  var maxXs = Math.max.apply(null,xCounts.map(function(p){return p.xs;}));
-  if (maxXs>0) xCounts.filter(function(p){return p.xs===maxXs;}).forEach(function(p){ shame[p.name]=(shame[p.name]||0)+1; });
+
+  // Hall of Shame — bottom 3 by most X/10s
+  var shameSorted = getShameSortedData();
+  for (var i=0; i<Math.min(3,shameSorted.length); i++) {
+    if (shameSorted[i].xs === 0) break; // don't award shame if no X/10s
+    var sname = shameSorted[i].name;
+    if (!shame[sname]) shame[sname]={gold:0,silver:0,bronze:0};
+    shame[sname][podium[i]]=(shame[sname][podium[i]]||0)+1;
+  }
+
   scores={}; expanded={};
   save(); renderSquad(); renderTable(); renderFame(); renderShame();
 };
@@ -356,22 +390,16 @@ function renderAnswersList() {
   var el = document.getElementById('answers-list');
   if (!el) return;
   var keys = Object.keys(answers);
-  if (!keys.length) {
-    el.innerHTML = '<div style="font-family:monospace;font-size:11px;color:#4a2a5a;padding-top:8px;">No answers saved yet.</div>';
-    return;
-  }
+  if (!keys.length) { el.innerHTML='<div style="font-family:monospace;font-size:11px;color:#4a2a5a;padding-top:8px;">No answers saved yet.</div>'; return; }
   var html = '<div style="font-size:9px;letter-spacing:2px;color:#f4d03f;font-family:monospace;margin-bottom:8px;margin-top:4px;">ANSWERS SAVED (dates only)</div>';
   keys.forEach(function(date) {
-    var sd = date.replace(/'/g,"\\'");
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1a0028;">'
-      + '<div style="display:flex;align-items:center;gap:8px;">'
-      + '<span style="color:#00ff85;font-size:13px;">✓</span>'
-      + '<span style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+date+'</span>'
-      + '</div>'
-      + '<button onclick="deleteAnswer(\''+sd+'\')" style="padding:3px 8px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">✕</button>'
-      + '</div>';
+    var sd=date.replace(/'/g,"\\'");
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1a0028;">'
+      +'<div style="display:flex;align-items:center;gap:8px;"><span style="color:#00ff85;font-size:13px;">✓</span><span style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+date+'</span></div>'
+      +'<button onclick="deleteAnswer(\''+sd+'\')" style="padding:3px 8px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">✕</button>'
+      +'</div>';
   });
-  el.innerHTML = html;
+  el.innerHTML=html;
 }
 
 function renderTable() {
@@ -448,14 +476,27 @@ function renderFame() {
 }
 
 function renderShame() {
-  var data=players.map(function(name){ return {name:name,titles:shame[name]||0}; }).sort(function(a,b){return b.titles-a.titles;});
+  var allNames=players.slice();
+  Object.keys(shame).forEach(function(n){ if(allNames.indexOf(n)<0) allNames.push(n); });
+  var data=allNames.map(function(name){
+    var s=shame[name]||{};
+    return {name:name, gold:typeof s.gold==='number'?s.gold:0, silver:typeof s.silver==='number'?s.silver:0, bronze:typeof s.bronze==='number'?s.bronze:0};
+  }).sort(function(a,b){
+    if(b.gold!==a.gold) return b.gold-a.gold;
+    if(b.silver!==a.silver) return b.silver-a.silver;
+    if(b.bronze!==a.bronze) return b.bronze-a.bronze;
+    return a.name.replace(/[^a-zA-Z0-9]/g,'').localeCompare(b.name.replace(/[^a-zA-Z0-9]/g,''));
+  });
   var html='';
-  if (!data.length||data.every(function(d){return d.titles===0;})) {
+  if (!data.length||data.every(function(d){return d.gold+d.silver+d.bronze===0;})) {
     html='<div style="padding:32px;text-align:center;color:#4a2a5a;font-family:monospace;font-size:13px;">No shame titles yet — end a mini league to populate this!</div>';
   } else {
+    html+='<div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;padding:6px 10px;margin-bottom:4px;"><div></div><div style="font-size:9px;letter-spacing:2px;color:#5a3a6a;font-family:monospace;">PLAYER</div><div style="font-size:16px;text-align:center;">💀</div><div style="font-size:16px;text-align:center;">😬</div><div style="font-size:16px;text-align:center;">😅</div></div>';
     for (var i=0;i<data.length;i++) {
-      var row=data[i], top=i===0&&row.titles>0;
-      html+='<div style="background:'+(top?'rgba(230,57,70,0.08)':'rgba(56,0,60,0.3)')+';border:'+(top?'1px solid rgba(230,57,70,0.3)':'1px solid #1a0028')+';border-radius:6px;margin-bottom:4px;"><div style="display:flex;align-items:center;justify-content:space-between;padding:14px;"><div style="display:flex;align-items:center;gap:12px;"><div style="font-size:'+(top?'20':'13')+'px;">'+(top?'💀':(i+1))+'</div><div style="font-weight:700;font-size:14px;color:'+(top?'#e63946':'#d0c0e0')+';">'+row.name+'</div></div><div style="font-family:monospace;font-size:20px;font-weight:900;color:#e63946;">'+row.titles+' <span style="font-size:12px;color:#6a2a3a;">title'+(row.titles!==1?'s':'')+'</span></div></div></div>';
+      var row=data[i], total=row.gold+row.silver+row.bronze;
+      var bg=i===0&&total>0?'rgba(230,57,70,0.08)':'rgba(56,0,60,0.3)';
+      var border=i===0&&total>0?'1px solid rgba(230,57,70,0.3)':'1px solid #1a0028';
+      html+='<div style="background:'+bg+';border:'+border+';border-radius:6px;margin-bottom:4px;"><div style="display:grid;grid-template-columns:30px 1fr 52px 52px 52px;gap:4px;align-items:center;padding:12px 10px;"><div style="font-size:'+(i===0&&total>0?'17':'12')+'px;text-align:center;">'+(i===0&&total>0?'💀':(i+1))+'</div><div style="font-weight:700;font-size:14px;color:'+(i===0&&total>0?'#e63946':'#d0c0e0')+';">'+row.name+'</div><div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#e63946;">'+row.gold+'</div><div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#c0c0c0;">'+row.silver+'</div><div style="text-align:center;font-family:monospace;font-size:16px;font-weight:900;color:#cd7f32;">'+row.bronze+'</div></div></div>';
     }
   }
   document.getElementById('shame-body').innerHTML=html;
