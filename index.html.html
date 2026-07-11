@@ -57,10 +57,10 @@
     <button onclick="submitScore()" style="width:100%;padding:14px;background:#00ff85;color:#38003c;border:none;border-radius:6px;font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px;cursor:pointer;">⚽ SUBMIT SCORE</button>
   </div>
 
-  <!-- Daily wordle answer (hidden from display, export only) -->
+  <!-- Daily wordle answer -->
   <div style="font-size:10px;letter-spacing:3px;color:#f4d03f;font-family:monospace;margin-bottom:12px;">🟩 TODAY'S WORDLE ANSWER</div>
   <div style="background:rgba(56,0,60,0.3);border:1px solid #2a0a3a;border-radius:8px;padding:14px;margin-bottom:20px;">
-    <div style="font-size:11px;color:#5a3a6a;font-family:monospace;margin-bottom:12px;">Saved answers are hidden from the app and only appear in exports.</div>
+    <div style="font-size:11px;color:#5a3a6a;font-family:monospace;margin-bottom:12px;">Player names are hidden — only dates are shown.</div>
     <div style="margin-bottom:12px;">
       <div style="font-size:10px;letter-spacing:2px;color:#a070b0;font-family:monospace;margin-bottom:6px;">PUZZLE DATE</div>
       <input id="answer-date" type="text" placeholder="e.g. Jun 27" style="width:100%;padding:12px;background:#10001a;border:1px solid #3a1a4a;color:#e8e8f8;border-radius:6px;font-size:15px;font-family:Georgia,serif;outline:none;"/>
@@ -71,7 +71,9 @@
     </div>
     <div id="answer-msg" style="display:none;padding:10px;border-radius:6px;font-family:monospace;font-size:13px;margin-bottom:10px;"></div>
     <button onclick="submitAnswer()" style="width:100%;padding:14px;background:#f4d03f;color:#1a0a00;border:none;border-radius:6px;font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px;cursor:pointer;">🟩 SAVE ANSWER</button>
-    <div id="answers-count" style="margin-top:10px;font-family:monospace;font-size:11px;color:#5a3a6a;text-align:center;"></div>
+
+    <!-- Dates only list -->
+    <div id="answers-list" style="margin-top:14px;"></div>
   </div>
 </div>
 
@@ -162,7 +164,7 @@ onValue(ref(db, 'league'), function(snapshot) {
     renderSquad();
     renderFame();
     renderShame();
-    renderAnswersCount();
+    renderAnswersList();
   }
 });
 
@@ -219,7 +221,7 @@ window.show = function(v) {
     document.getElementById('btn-'+s).style.color = v===s?'#38003c':'#7a4a8a';
   });
   if (v==='table')  renderTable();
-  if (v==='submit') { renderSelect(); renderAnswersCount(); }
+  if (v==='submit') { renderSelect(); renderAnswersList(); }
   if (v==='fame')   renderFame();
   if (v==='shame')  renderShame();
   if (v==='manage') renderSquad();
@@ -259,8 +261,14 @@ window.submitAnswer = function() {
   save();
   document.getElementById('answer-date').value = '';
   document.getElementById('answer-name').value = '';
-  showMsg('answer-msg','✅ Saved! Answer stored securely — export only.','rgba(0,255,133,0.06)','#00ff85','1px solid rgba(0,255,133,0.4)');
-  renderAnswersCount();
+  showMsg('answer-msg','✅ Saved! Answer stored for '+date+'.','rgba(0,255,133,0.06)','#00ff85','1px solid rgba(0,255,133,0.4)');
+  renderAnswersList();
+};
+
+window.deleteAnswer = function(date) {
+  delete answers[date];
+  save();
+  renderAnswersList();
 };
 
 window.addPlayer = function() {
@@ -344,11 +352,26 @@ function parseScore(text) {
   return { guesses:g, puzzle:pm?pm[0]:null, points:POINTS[g]!==undefined?POINTS[g]:0 };
 }
 
-function renderAnswersCount() {
-  var el = document.getElementById('answers-count');
+function renderAnswersList() {
+  var el = document.getElementById('answers-list');
   if (!el) return;
-  var count = Object.keys(answers).length;
-  el.textContent = count + ' answer'+(count!==1?'s':'')+' saved (export only)';
+  var keys = Object.keys(answers);
+  if (!keys.length) {
+    el.innerHTML = '<div style="font-family:monospace;font-size:11px;color:#4a2a5a;padding-top:8px;">No answers saved yet.</div>';
+    return;
+  }
+  var html = '<div style="font-size:9px;letter-spacing:2px;color:#f4d03f;font-family:monospace;margin-bottom:8px;margin-top:4px;">ANSWERS SAVED (dates only)</div>';
+  keys.forEach(function(date) {
+    var sd = date.replace(/'/g,"\\'");
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1a0028;">'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      + '<span style="color:#00ff85;font-size:13px;">✓</span>'
+      + '<span style="font-family:monospace;font-size:12px;color:#c0a0d0;">'+date+'</span>'
+      + '</div>'
+      + '<button onclick="deleteAnswer(\''+sd+'\')" style="padding:3px 8px;background:transparent;border:1px solid #4a1a2a;color:#e63946;border-radius:4px;font-family:monospace;font-size:10px;cursor:pointer;">✕</button>'
+      + '</div>';
+  });
+  el.innerHTML = html;
 }
 
 function renderTable() {
