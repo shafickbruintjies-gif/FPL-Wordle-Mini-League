@@ -136,7 +136,7 @@ const db  = getDatabase(app);
 var players  = [];
 var scores   = {};
 var medals   = {};
-var shame    = {}; // { playerName: { gold:0, silver:0, bronze:0 } }
+var shame    = {};
 var answers  = {};
 var expanded = {};
 var POINTS   = {1:25,2:18,3:15,4:12,5:10,6:8,7:6,8:4,9:2,10:1,'X':0};
@@ -164,41 +164,49 @@ onValue(ref(db, 'league'), function(snapshot) {
 });
 
 function save() {
-  set(ref(db, 'league'), { players:players, scores:scores, medals:medals, shame:shame, answers:answers });
+  return set(ref(db, 'league'), {
+    players: players,
+    scores:  scores,
+    medals:  medals,
+    shame:   shame,
+    answers: answers
+  });
 }
 
-function getSortedData() {
-  return players.map(function(name) {
-    var ps  = scores[name] || [];
-    var pts = 0, greens = 0, yellows = 0;
-    var counts = {};
-    for (var i=1; i<=10; i++) counts[i] = 0;
-    counts['X'] = 0;
-    for (var i=0; i<ps.length; i++) {
-      var g = ps[i].guesses;
-      pts += POINTS[g] !== undefined ? POINTS[g] : 0;
-      if (counts[g] !== undefined) counts[g]++;
-      if (ps[i].raw) {
-        var lines = ps[i].raw.split('\n');
-        for (var l=0; l<lines.length; l++) {
-          var line = lines[l].trim();
-          if (/^[\u{1F7E9}\u{1F7E8}\u{1F7E5}\u{2B1C}]+$/u.test(line)) {
-            Array.from(line).forEach(function(c) {
-              if (c==='🟩') greens++;
-              else if (c==='🟨') yellows++;
-            });
-          }
+function getPlayerStats(name) {
+  var ps = scores[name] || [];
+  var pts = 0, greens = 0, yellows = 0;
+  var counts = {};
+  for (var i=1; i<=10; i++) counts[i] = 0;
+  counts['X'] = 0;
+  for (var i=0; i<ps.length; i++) {
+    var g = ps[i].guesses;
+    pts += POINTS[g] !== undefined ? POINTS[g] : 0;
+    if (counts[g] !== undefined) counts[g]++;
+    if (ps[i].raw) {
+      var lines = ps[i].raw.split('\n');
+      for (var l=0; l<lines.length; l++) {
+        var line = lines[l].trim();
+        if (/^[\u{1F7E9}\u{1F7E8}\u{1F7E5}\u{2B1C}]+$/u.test(line)) {
+          Array.from(line).forEach(function(c) {
+            if (c==='🟩') greens++;
+            else if (c==='🟨') yellows++;
+          });
         }
       }
     }
-    var avg = null;
-    if (ps.length) {
-      var s = 0;
-      for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X'?11:ps[i].guesses);
-      avg = (s/ps.length).toFixed(1);
-    }
-    return { name:name, pts:pts, played:ps.length, avg:avg, counts:counts, greens:greens, yellows:yellows, history:ps.slice().reverse() };
-  }).sort(function(a,b) {
+  }
+  var avg = null;
+  if (ps.length) {
+    var s = 0;
+    for (var i=0; i<ps.length; i++) s += (ps[i].guesses==='X'?11:ps[i].guesses);
+    avg = (s/ps.length).toFixed(1);
+  }
+  return { name:name, pts:pts, played:ps.length, avg:avg, counts:counts, greens:greens, yellows:yellows, history:ps.slice().reverse() };
+}
+
+function getSortedData() {
+  return players.map(function(n){ return getPlayerStats(n); }).sort(function(a,b) {
     if (b.pts !== a.pts) return b.pts - a.pts;
     for (var g=1; g<=10; g++) {
       if ((b.counts[g]||0) !== (a.counts[g]||0)) return (b.counts[g]||0)-(a.counts[g]||0);
@@ -209,40 +217,13 @@ function getSortedData() {
   });
 }
 
-// Sort players by shame (most X/10s first, tiebreak: most 10/10s, 9/10s... least greens, least yellows)
 function getShameSortedData() {
-  return players.map(function(name) {
-    var ps = scores[name] || [];
-    var counts = {}, greens = 0, yellows = 0;
-    for (var i=1; i<=10; i++) counts[i] = 0;
-    counts['X'] = 0;
-    for (var i=0; i<ps.length; i++) {
-      var g = ps[i].guesses;
-      if (counts[g] !== undefined) counts[g]++;
-      if (ps[i].raw) {
-        var lines = ps[i].raw.split('\n');
-        for (var l=0; l<lines.length; l++) {
-          var line = lines[l].trim();
-          if (/^[\u{1F7E9}\u{1F7E8}\u{1F7E5}\u{2B1C}]+$/u.test(line)) {
-            Array.from(line).forEach(function(c) {
-              if (c==='🟩') greens++;
-              else if (c==='🟨') yellows++;
-            });
-          }
-        }
-      }
-    }
-    return { name:name, xs:counts['X']||0, counts:counts, greens:greens, yellows:yellows };
-  }).sort(function(a,b) {
-    // Most X/10s first
-    if (b.xs !== a.xs) return b.xs - a.xs;
-    // Tiebreak: most 10/10s, then 9/10s... down to 1/10s
+  return players.map(function(n){ return getPlayerStats(n); }).sort(function(a,b) {
+    if (b.counts['X'] !== a.counts['X']) return b.counts['X'] - a.counts['X'];
     for (var g=10; g>=1; g--) {
       if ((b.counts[g]||0) !== (a.counts[g]||0)) return (b.counts[g]||0)-(a.counts[g]||0);
     }
-    // Least greens
     if (a.greens !== b.greens) return a.greens - b.greens;
-    // Least yellows
     return a.yellows - b.yellows;
   });
 }
@@ -355,26 +336,41 @@ window.exportData = function() {
 window.resetAll = function() {
   if (!confirm('End this mini league and reset scores? Winners will be saved to Hall of Fame and Hall of Shame.')) return;
 
-  // Hall of Fame — top 3 by points
-  var sorted = getSortedData();
-  var podium = ['gold','silver','bronze'];
-  for (var i=0; i<Math.min(3,sorted.length); i++) {
-    var name = sorted[i].name;
-    if (!medals[name]) medals[name]={gold:0,silver:0,bronze:0};
-    medals[name][podium[i]]=(medals[name][podium[i]]||0)+1;
-  }
+  try {
+    // Hall of Fame — top 3 by points
+    var sorted = getSortedData();
+    var podium = ['gold','silver','bronze'];
+    for (var i=0; i<Math.min(3, sorted.length); i++) {
+      var fname = sorted[i].name;
+      if (!medals[fname]) medals[fname] = {gold:0, silver:0, bronze:0};
+      medals[fname][podium[i]] = (medals[fname][podium[i]]||0) + 1;
+    }
 
-  // Hall of Shame — bottom 3 by most X/10s
-  var shameSorted = getShameSortedData();
-  for (var i=0; i<Math.min(3,shameSorted.length); i++) {
-    if (shameSorted[i].xs === 0) break; // don't award shame if no X/10s
-    var sname = shameSorted[i].name;
-    if (!shame[sname]) shame[sname]={gold:0,silver:0,bronze:0};
-    shame[sname][podium[i]]=(shame[sname][podium[i]]||0)+1;
-  }
+    // Hall of Shame — top 3 by most X/10s
+    var shameSorted = getShameSortedData();
+    for (var j=0; j<Math.min(3, shameSorted.length); j++) {
+      if ((shameSorted[j].counts['X']||0) === 0) break;
+      var sname = shameSorted[j].name;
+      if (!shame[sname]) shame[sname] = {gold:0, silver:0, bronze:0};
+      shame[sname][podium[j]] = (shame[sname][podium[j]]||0) + 1;
+    }
 
-  scores={}; expanded={};
-  save(); renderSquad(); renderTable(); renderFame(); renderShame();
+    scores   = {};
+    expanded = {};
+
+    save().then(function() {
+      renderSquad();
+      renderTable();
+      renderFame();
+      renderShame();
+      alert('✅ Mini league ended! Scores reset and results saved.');
+    }).catch(function(err) {
+      alert('⚠ Error saving to Firebase: ' + err.message);
+    });
+
+  } catch(err) {
+    alert('⚠ Error during reset: ' + err.message);
+  }
 };
 
 function parseScore(text) {
